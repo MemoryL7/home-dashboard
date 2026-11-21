@@ -1,0 +1,26 @@
+{
+	"name": "home-dashboard",
+	"version": "0.1.0",
+	"description": "随手记 Home 仪表盘 Obsidian 插件",
+	"main": "main.js",
+	"type": "module",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"test": "node esbuild.config.mjs production && node --test dist-test/"
+	},
+	"keywords": [],
+	"author": "MemoryL7",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^22.0.0",
+		"builtin-modules": "^4.0.0",
+		"esbuild": "^0.24.0",
+		"obsidian": "latest",
+		"tslib": "2.8.1",
+		"typescript": "^5.6.0"
+	},
+	"allowScripts": {
+		"esbuild@0.24.2": true
+	}
+}

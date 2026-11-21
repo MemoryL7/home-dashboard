@@ -1,0 +1,1411 @@
+/*
+ * home-dashboard styles.
+ *
+ * CONVENTION: every rule in this file MUST be prefixed with the composite
+ * selector `.home-dashboard.home-v2` — the root element created by HomeView
+ * inside the view's contentEl. This keeps plugin styles scoped to our own
+ * view container so ordinary markdown pages are never affected, and
+ * `.home-v2` gives later versions a structural-override hook.
+ *
+ * Sole exemption: rules on the view's own container
+ * (`[data-type="home-dashboard-view"]`), which is already plugin-scoped by
+ * Obsidian's data-type attribute.
+ */
+
+.workspace-leaf-content[data-type="home-dashboard-view"] {
+	/* 滚动收进 .home-dashboard.home-v2 根（竹园 sticky 固定的前提），本层不滚 */
+	overflow: hidden;
+}
+.workspace-leaf-content[data-type="home-dashboard-view"] .view-content {
+	/* 竹园背景要铺满整个视图（含边缘），视图自带的内边距去掉；
+	   高度撑满，让视图根成为滚动容器 */
+	padding: 0;
+	height: 100%;
+}
+.workspace-leaf-content[data-type="home-dashboard-view"] .home-dashboard.home-v2 {
+	height: 100%;
+	overflow-y: auto;
+}
+
+.home-dashboard.home-v2 {
+	/* 间距 token（全页只允许这一套） */
+	--s1: 8px;
+	--s2: 12px;
+	--s3: 16px;
+	--s4: 24px;
+	--s5: 32px;
+	--card-bg: var(--glass-bg, rgba(62, 142, 95, 0.055));
+	--card-border: var(--glass-border, rgba(90, 110, 95, 0.18));
+	display: flex;
+	flex-direction: column;
+	min-height: 100%;
+	font-size: 13px;
+	color: var(--text-normal);
+	/* 竹园场景的定位上下文：背景铺满视图根，卡片悬浮其上 */
+	position: relative;
+	overflow: hidden;
+}
+/* 亮色下次级灰字（--text-faint 系）对比度不足，本页加深一档保可读 */
+.theme-light .home-dashboard.home-v2 {
+	--text-faint: #7d887e;
+}
+.home-dashboard.home-v2 .card-bamboo {
+	background: var(--card-bg);
+	border: 1px solid var(--card-border);
+	border-radius: 16px;
+	/* 玻璃模糊（与草稿箱同款） */
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+/* 卡片标题不带横线（压掉主题给 h3 的分隔线） */
+.home-dashboard.home-v2 .dash-card > h3,
+.home-dashboard.home-v2 .recent-head h3,
+.home-dashboard.home-v2 .todo-head h3,
+.home-dashboard.home-v2 .draft-head h3 {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+/* 库内链接不带主题的背景块（待办/最近新增子项） */
+.home-dashboard.home-v2 a.internal-link {
+	background: none;
+	border: none;
+	box-shadow: none;
+	padding: 0;
+}
+/* 文本链接一律不带下划线（压掉主题/markdown 渲染的 link 下划线） */
+.home-dashboard.home-v2 a,
+.home-dashboard.home-v2 a:hover,
+.home-dashboard.home-v2 a:active {
+	text-decoration: none;
+}
+/* 数字统一等宽（速览/胶囊/条形右列/时刻） */
+.home-dashboard.home-v2 b,
+.home-dashboard.home-v2 .hd-capsule,
+.home-dashboard.home-v2 .bar-num,
+.home-dashboard.home-v2 .dl-hours span {
+	font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   竹园场景（issue IKW6K9）：三层景深背景 + 飘叶 + 赏竹显隐
+   层次：竹园 < 氛围光/飘叶 < 卡片；背景层全部 pointer-events:none，
+   点击穿透到视图根 → 赏竹的「点击空白」入口。
+   ============================================================ */
+
+/* 竹园宿主在视图根容器内原位渲染：与玻璃卡片同一 backdrop 取样树，
+   卡片能模糊到竹子（body 级固定层会跳出取样树，勿改）。
+   opacity 用 body 前缀提到 4 类：主题 theme.css:468 的 v1 旧规则
+   （.theme-light .home-dashboard .bg-garden { opacity:.45 }）同为 3 类，
+   加载顺序不定会打平，4 类稳压——那是给旧 div 竹背景调的淡，会把整个
+   SVG 竹园砍到 45% 透明，即「整页蒙一层」的元凶 */
+/* 竹园宿主 sticky 固定：内容滚动时竹园钉在滚动视口顶部不随滚。
+   sticky 保持在滚动容器内 → 与玻璃卡片同一 backdrop 取样树，blur 不丢
+   （body 级 fixed 会跳出取样树，勿改）。height:0 占位不推挤内容，
+   内部 svg / 飘叶层用绝对定位铺满视口高（100vh ≈ 视图可视高度） */
+body .home-dashboard.home-v2 .bg-garden {
+	position: sticky;
+	top: 0;
+	height: 0;
+	/* 主题旧规则带 overflow:hidden（fixed 全屏时代产物）——宿主 height:0 时
+	   会把 100vh 的 svg 连带裁没，必须显式放开 */
+	overflow: visible;
+	pointer-events: none;
+	z-index: 0;
+	opacity: 1;
+}
+.home-dashboard.home-v2 .garden-svg {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	/* 高度 = 视图实际高（garden-dom 测 host 写入 --view-h）。不用 100vh：
+	   窗口高 > 视图高（标签栏/状态栏占了空间）时，100vh 的绝对定位盒子
+	   会把滚动高度撑到窗口高，内容不满一屏也出滚动条 */
+	height: var(--view-h, 100vh);
+	display: block;
+}
+/* 三层景深 + 右侧远景。2026-11-18 调浓去糊（用户反馈整体偏"蒙"）：
+   远景两层不再 blur（blur 是雾感主源），各层透明度整体上调 */
+.home-dashboard.home-v2 .layer-far  { opacity: .18; }
+.home-dashboard.home-v2 .layer-mid  { opacity: .45; }
+.home-dashboard.home-v2 .layer-near { opacity: .9; }
+.home-dashboard.home-v2 .layer-distant { opacity: .14; }
+
+/* 飘落竹叶容器：位置由 rAF 按绝对时间驱动（不能用 CSS animation——
+   节点重插会从 0 重启相位，齐跳即闪） */
+.home-dashboard.home-v2 .bg-fall {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: var(--view-h, 100vh);
+	pointer-events: none;
+	overflow: hidden;
+	/* 飘叶置顶：压过内容层(.dash z-index:1)，仍低于各处 tooltip */
+	z-index: 2;
+}
+.home-dashboard.home-v2 .fall-leaf {
+	position: absolute;
+	top: 0;
+	left: 0;
+	display: block;
+	opacity: .5;
+	will-change: transform;
+}
+.home-dashboard.home-v2 .fall-leaf svg { display: block; }
+@media (prefers-reduced-motion: reduce) {
+	.home-dashboard.home-v2 .bg-fall { display: none; }
+}
+/* 摆动 rAF 驱动（dataset 带 dur/amp/ph0）：transform-origin 定在竿底，
+   animation:none 顺带压掉任何同名旧规则 */
+.home-dashboard.home-v2 .sway {
+	transform-box: fill-box;
+	transform-origin: 50% 100%;
+	animation: none;
+}
+
+/* —— 赏竹（zen）：点击空白显隐全部内容（状态机 garden-scene.zenToggle） ——
+   只作用于本视图根（host class），不依赖 body 级选择器，避免样式泄漏 */
+.home-dashboard.home-v2.home-zen .hd-header,
+.home-dashboard.home-v2.home-zen .dash {
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: opacity 0.6s ease, visibility 0s linear 0.6s;
+}
+
+.home-dashboard.home-v2 .home-dashboard__placeholder {
+	margin: auto;
+	padding: var(--s5);
+	border-radius: 12px;
+	border: 1px dashed var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-medium);
+	text-align: center;
+	max-width: 480px;
+}
+
+/* ============================================================
+   布局骨架：页头横贯两列 + .dash 双列（左 248px 个人面板 sticky /
+   右主区四分区），列间距 24px；<1100px 双列收单列、面板模块横向铺开
+   ============================================================ */
+.home-dashboard.home-v2 .dash {
+	display: grid;
+	grid-template-columns: 248px minmax(0, 1fr);
+	column-gap: var(--s4);
+	align-items: start;
+	margin: 4vh auto var(--s5);
+	padding: 0 var(--s4);
+	max-width: 1240px;
+	position: relative;
+	z-index: 1;
+}
+
+/* —— 页头：品牌只在这一处；右侧日期状态胶囊 —— */
+.home-dashboard.home-v2 .hd-header {
+	grid-column: 1 / -1;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--s4);
+	margin-bottom: var(--s2);
+}
+.home-dashboard.home-v2 .hd-brand {
+	display: flex;
+	align-items: center;
+	gap: var(--s2);
+	min-width: 0;
+}
+.home-dashboard.home-v2 .hd-logo { flex: none; }
+.home-dashboard.home-v2 .hd-logo-img {
+	width: 48px;
+	height: 48px;
+	border-radius: 12px;
+	object-fit: cover;
+	display: block;
+}
+.home-dashboard.home-v2 .hd-logo-char {
+	font-size: 32px;
+	line-height: 48px;
+}
+/* logo = 交互入口（点击选图/拖入导入）：悬停浮起 + 拖拽经过高亮 */
+.home-dashboard.home-v2 .hd-logo .sp-logo-pick {
+	cursor: pointer;
+	border-radius: 10px;
+	transition: transform 0.15s ease, box-shadow 0.15s ease, outline-color 0.15s ease;
+	outline: 1px dashed transparent;
+	outline-offset: 3px;
+}
+.home-dashboard.home-v2 .hd-logo .sp-logo-pick:hover {
+	transform: scale(1.05);
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+	outline-color: var(--text-faint);
+}
+.home-dashboard.home-v2 .hd-logo .sp-logo-pick.sp-logo-drag {
+	outline: 1.5px dashed var(--interactive-accent);
+	transform: scale(1.06);
+}
+.home-dashboard.home-v2 .hd-brand-text { min-width: 0; }
+.home-dashboard.home-v2 .hd-name {
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1.3;
+}
+.home-dashboard.home-v2 .hd-tag {
+	font-size: 12px;
+	color: var(--text-faint);
+	letter-spacing: 1px;
+}
+.home-dashboard.home-v2 .hd-capsule {
+	flex: none;
+	font-size: 12px;
+	color: var(--text-muted);
+	padding: 7px 16px;
+	border-radius: 999px;
+	background: var(--card-bg);
+	border: 1px solid var(--card-border);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+
+/* —— 右主区：四个分区，间距 32px；分区标题行（标题 + 细线 + 提示） —— */
+.home-dashboard.home-v2 .main { min-width: 0; }
+.home-dashboard.home-v2 .sec { margin-top: var(--s5); }
+/* 头部与首分区之间的距离收紧 32px（首分区贴住头部，间距只留给后续分区） */
+.home-dashboard.home-v2 .main .sec:first-child { margin-top: 0; }
+.home-dashboard.home-v2 .sec-head {
+	display: flex;
+	align-items: center;
+	gap: var(--s2);
+	line-height: 19px;
+	height: 19px;
+	margin-bottom: var(--s2);
+}
+.home-dashboard.home-v2 .sec-title {
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 2px;
+	color: var(--text-normal);
+	white-space: nowrap;
+}
+.home-dashboard.home-v2 .sec-line {
+	flex: 1;
+	height: 1px;
+	background: var(--card-border);
+}
+.home-dashboard.home-v2 .sec-hint {
+	font-size: 11px;
+	color: var(--text-faint);
+	white-space: nowrap;
+}
+
+/* —— 左侧栏：sticky 个人面板（顶部与右侧时间轴卡顶边对齐：
+   首分区贴头部后，标题行 19 + 标题下距 12 = 31px） —— */
+.home-dashboard.home-v2 .side { min-width: 0; }
+.home-dashboard.home-v2 .side-panel {
+	position: sticky;
+	top: var(--s4);
+	margin-top: 31px;
+	padding: var(--s3);
+	display: flex;
+	flex-direction: column;
+}
+/* 模块之间用 1px 细分隔线（与卡同宽：负 margin 撑到卡边缘） */
+.home-dashboard.home-v2 .side-panel > * + * {
+	border-top: 1px solid var(--card-border);
+	margin-top: var(--s3);
+	margin-left: calc(-1 * var(--s3));
+	margin-right: calc(-1 * var(--s3));
+	padding-top: var(--s3);
+	padding-left: var(--s3);
+	padding-right: var(--s3);
+}
+/* 速览与本周打卡之间不画分隔线（仅留间距） */
+.home-dashboard.home-v2 .side-panel > .sp-week {
+	border-top: none;
+	padding-top: 0;
+}
+.home-dashboard.home-v2 .sp-label {
+	display: block;
+	font-size: 14px;
+	font-weight: 700;
+	margin-bottom: var(--s2);
+}
+/* 今日速览 2×2 数字格：中间十字分隔线 */
+.home-dashboard.home-v2 .sp-quick {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+}
+.home-dashboard.home-v2 .sp-q { text-align: center; padding: var(--s3) 0; }
+.home-dashboard.home-v2 .sp-q:nth-child(odd) {
+	border-right: 1px solid var(--card-border);
+}
+.home-dashboard.home-v2 .sp-q:nth-child(-n + 2) {
+	border-bottom: 1px solid var(--card-border);
+}
+.home-dashboard.home-v2 .sp-q-num {
+	display: block;
+	font-size: 20px;
+	line-height: 1.2;
+	font-weight: 700;
+	color: var(--color-green, #5cb87a);
+}
+.theme-light .home-dashboard.home-v2 .sp-q-num { color: #2e7d54; }
+.home-dashboard.home-v2 .sp-q-label {
+	display: block;
+	margin-top: 2px;
+	font-size: 11px;
+	color: var(--text-faint);
+}
+/* 本周打卡条：上字下点的 7 等分网格（一~日） */
+.home-dashboard.home-v2 .sp-dots {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 4px;
+}
+.home-dashboard.home-v2 .sp-day {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+}
+.home-dashboard.home-v2 .sp-day-zh {
+	font-size: 11px;
+	line-height: 1;
+	color: var(--text-faint);
+}
+.home-dashboard.home-v2 .sp-day.is-today .sp-day-zh {
+	color: var(--color-green, #5cb87a);
+	font-weight: 700;
+}
+.theme-light .home-dashboard.home-v2 .sp-day.is-today .sp-day-zh { color: #2e7d54; }
+/* 椭圆本体：全宽 × 10px 胶囊，玻璃质感（与卡片同一套 glass token） */
+.home-dashboard.home-v2 .sp-dot {
+	width: 100%;
+	height: 10px;
+	border-radius: 5px;
+	background: var(--card-bg);
+	border: 1px solid var(--card-border);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	box-sizing: border-box;
+}
+.home-dashboard.home-v2 .sp-dot.is-rec {
+	background: var(--color-green, #6aa97e);
+	border-color: transparent;
+}
+.theme-light .home-dashboard.home-v2 .sp-dot.is-rec { background: #2e7d54; }
+/* 今天：浅绿底 + 主题绿 1px 虚线描边（待打卡）。
+   注意 is-today 加在 .sp-day 容器上（见 stats-view.ts），需用后代选择器 */
+.home-dashboard.home-v2 .sp-day.is-today .sp-dot {
+	background: rgba(92, 184, 122, 0.15); /* 浅绿底（主题绿的半透明） */
+	border: 1px dashed var(--color-green, #3e7d54);
+}
+.theme-light .home-dashboard.home-v2 .sp-day.is-today .sp-dot { border-color: #2e7d54; }
+.home-dashboard.home-v2 .sp-day.is-today .sp-dot.is-rec {
+	background: var(--color-green, #6aa97e);
+	border-color: transparent;
+}
+.theme-light .home-dashboard.home-v2 .sp-day.is-today .sp-dot.is-rec { background: #2e7d54; }
+.home-dashboard.home-v2 .sp-week-cap {
+	margin-top: var(--s2);
+	text-align: center;
+	font-size: 11px;
+	color: var(--text-faint);
+}
+/* 🤖 今日洞察：浅强调色底圆角卡 */
+.home-dashboard.home-v2 .sp-bubble {
+	padding: var(--s2);
+	border-radius: 10px;
+	background: rgba(62, 142, 95, 0.1);
+	border: 1px solid var(--card-border);
+	font-size: 12px;
+	line-height: 1.6;
+	color: var(--text-normal);
+}
+/* 大类分布：紧凑条形（名称 34px + 弹性条 + 右对齐数字） */
+.home-dashboard.home-v2 .sp-cats-body { display: flex; flex-direction: column; gap: 4px; }
+.home-dashboard.home-v2 .bar-line {
+	display: flex;
+	align-items: center;
+	gap: var(--s2);
+}
+.home-dashboard.home-v2 .bar-line .bar-label {
+	flex: none;
+	width: 34px;
+	font-size: 12px;
+	color: var(--text-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.home-dashboard.home-v2 .bar-line .bar-track {
+	flex: 1;
+	height: 6px;
+	border-radius: 3px;
+	background: var(--background-modifier-hover);
+	overflow: hidden;
+}
+.home-dashboard.home-v2 .bar-line .bar-fill {
+	height: 100%;
+	border-radius: 3px;
+	background: var(--color-green, #5cb87a);
+}
+.theme-light .home-dashboard.home-v2 .bar-line .bar-fill { background: #2e7d54; }
+.home-dashboard.home-v2 .bar-line .bar-num {
+	flex: none;
+	width: 24px;
+	text-align: right;
+	font-size: 12px;
+	color: var(--text-muted);
+}
+/* 记录热力：近 14 天方格（沿用 hm-cell 色阶，见下方色板段） */
+.home-dashboard.home-v2 .sp-heat-head {
+	display: flex;
+	align-items: baseline;
+	gap: var(--s2);
+}
+.home-dashboard.home-v2 .sp-heat-head .sp-label { margin-bottom: 0; }
+.home-dashboard.home-v2 .sp-heat-sub {
+	font-size: 11px;
+	color: var(--text-faint);
+}
+.home-dashboard.home-v2 .sp-heat-cells {
+	display: grid;
+	grid-template-columns: repeat(14, 1fr);
+	gap: 3px;
+	margin-top: var(--s2);
+}
+.home-dashboard.home-v2 .sp-heat-cells .hm-cell {
+	width: auto;
+	height: auto;
+	min-width: 0;
+	aspect-ratio: 1;
+	border-radius: 2px;
+	background: var(--background-modifier-hover);
+	box-sizing: border-box;
+}
+
+/* —— 记录热力：格阵深浅色板（沿用现有热力色阶，插件视图不装主题也能渲染） —— */
+.home-dashboard.home-v2 .hm-cell.lv1,
+.home-dashboard.home-v2 .hm-cell.lv2,
+.home-dashboard.home-v2 .hm-cell.lv3,
+.home-dashboard.home-v2 .hm-cell.lv4 {
+	border-color: transparent;
+}
+.theme-dark .home-dashboard.home-v2 .hm-cell.lv1 { background: rgba(92, 184, 122, 0.5); }
+.theme-dark .home-dashboard.home-v2 .hm-cell.lv2 { background: rgba(92, 184, 122, 0.7); }
+.theme-dark .home-dashboard.home-v2 .hm-cell.lv3 { background: rgba(92, 184, 122, 0.88); }
+.theme-dark .home-dashboard.home-v2 .hm-cell.lv4 { background: #6fce97; }
+.theme-light .home-dashboard.home-v2 .hm-cell.lv1 { background: rgba(62, 142, 95, 0.45); }
+.theme-light .home-dashboard.home-v2 .hm-cell.lv2 { background: rgba(62, 142, 95, 0.65); }
+.theme-light .home-dashboard.home-v2 .hm-cell.lv3 { background: rgba(62, 142, 95, 0.85); }
+.theme-light .home-dashboard.home-v2 .hm-cell.lv4 { background: #3e8e5f; }
+
+/* ============================================================
+   分区内部：卡片通用字阶 / 行 动 7:5 两列 / 记 录 拼合卡
+   ============================================================ */
+.home-dashboard.home-v2 .dash-card > h3,
+.home-dashboard.home-v2 .recent-head h3,
+.home-dashboard.home-v2 .todo-head h3,
+.home-dashboard.home-v2 .draft-head h3 {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 700;
+}
+/* 次操作文字按钮（层级 2）：默认融入页面，hover 浮现浅底 */
+.home-dashboard.home-v2 .card-act {
+	cursor: pointer;
+	border: 1px solid transparent;
+	box-shadow: none; /* 压掉 Obsidian 给原生 button 的默认 --input-shadow */
+	background: transparent;
+	color: var(--text-muted);
+	border-radius: 999px;
+	padding: 2px 10px;
+	font-size: 11px;
+	font-weight: 400;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+.home-dashboard.home-v2 .card-act:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+/* —— 行 动：待办 7 : 最近新增 5 两列并排（两卡等高） —— */
+.home-dashboard.home-v2 .sec-cols {
+	display: grid;
+	grid-template-columns: 7fr 5fr;
+	gap: var(--s4);
+	align-items: stretch;
+}
+.home-dashboard.home-v2 .col-todo,
+.home-dashboard.home-v2 .col-recent { min-width: 0; }
+.home-dashboard.home-v2 .sec-cols .dash-card { height: 100%; box-sizing: border-box; }
+/* 最近新增卡不参与行高计算（absolute 填充）：行高完全由待办卡决定，
+   两卡高度严格一致；最近内容超出时在卡内滚动 */
+.home-dashboard.home-v2 .col-recent { position: relative; }
+.home-dashboard.home-v2 .col-recent .recent-card {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+}
+.home-dashboard.home-v2 .recent-body {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+}
+
+/* 细滚动条：待办列表区 + 最近新增列表区共用，尽量弱化存在感 */
+.home-dashboard.home-v2 .todo-card .todo-body::-webkit-scrollbar,
+.home-dashboard.home-v2 .recent-body::-webkit-scrollbar {
+	width: 3px;
+}
+.home-dashboard.home-v2 .todo-card .todo-body::-webkit-scrollbar-track,
+.home-dashboard.home-v2 .recent-body::-webkit-scrollbar-track {
+	background: transparent;
+}
+.home-dashboard.home-v2 .todo-card .todo-body::-webkit-scrollbar-thumb,
+.home-dashboard.home-v2 .recent-body::-webkit-scrollbar-thumb {
+	background: var(--card-border, var(--background-modifier-border));
+	border-radius: 3px;
+}
+.home-dashboard.home-v2 .todo-card .todo-body::-webkit-scrollbar-thumb:hover,
+.home-dashboard.home-v2 .recent-body::-webkit-scrollbar-thumb:hover {
+	background: var(--text-faint);
+}
+
+/* 隐藏滚动条：待办列表区 + 最近新增列表区共用（仍可滚轮/触摸滚动） */
+.home-dashboard.home-v2 .todo-card .todo-body,
+.home-dashboard.home-v2 .recent-body {
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* 旧 Edge */
+}
+.home-dashboard.home-v2 .todo-card .todo-body::-webkit-scrollbar,
+.home-dashboard.home-v2 .recent-body::-webkit-scrollbar {
+	display: none; /* Chromium */
+}
+/* 鼠标按住拖拽滚动：待办列表区 + 最近新增列表区 */
+.home-dashboard.home-v2 .todo-card .todo-body,
+.home-dashboard.home-v2 .recent-body {
+	cursor: grab;
+}
+.home-dashboard.home-v2 .todo-card .todo-body.is-drag-scrolling,
+.home-dashboard.home-v2 .recent-body.is-drag-scrolling {
+	cursor: grabbing;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+/* 最近新增 feed */
+.home-dashboard.home-v2 .recent-card { padding: var(--s3); }
+.home-dashboard.home-v2 .recent-head {
+	display: flex;
+	align-items: baseline;
+	gap: var(--s2);
+}
+.home-dashboard.home-v2 .recent-count {
+	font-size: 11px;
+	color: var(--text-faint);
+}
+.home-dashboard.home-v2 .recent-body { margin-top: var(--s1); }
+.home-dashboard.home-v2 .recent-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--s2);
+	padding: 6px 0;
+	border-bottom: 1px solid var(--card-border);
+	/* 与待办卡的 todo-row 行高保持一致（43px） */
+	min-height: 43px;
+	box-sizing: border-box;
+}
+.home-dashboard.home-v2 .recent-row:last-child { border-bottom-color: transparent; }
+.home-dashboard.home-v2 .recent-link {
+	color: var(--text-normal);
+	font-size: 13px;
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.home-dashboard.home-v2 .recent-link:hover { color: var(--color-green, #5cb87a); }
+.home-dashboard.home-v2 .recent-meta {
+	flex: none;
+	font-size: 11px;
+	color: var(--text-faint);
+}
+
+/* —— 记 录：随手记上卡 + 草稿箱下卡拼合成一个整体 —— */
+.home-dashboard.home-v2 .record-combo {
+	display: flex;
+	flex-direction: column;
+}
+/* 上卡：只有下边框、上圆角 */
+.home-dashboard.home-v2 .record-combo .cap-card {
+	padding: var(--s3);
+	border: 1px solid var(--card-border);
+	border-bottom: none;
+	border-radius: 16px 16px 0 0;
+	background: var(--card-bg);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+/* 下卡：只有上圆角，拼接线由自己的上边框画出 */
+.home-dashboard.home-v2 .record-combo .draft-root { gap: 0; }
+.home-dashboard.home-v2 .record-combo .draft-card {
+	border-radius: 0 0 16px 16px;
+	background: var(--card-bg);
+}
+.home-dashboard.home-v2 .mini-muted {
+	color: var(--text-faint);
+	font-size: 12px;
+	padding: 4px 0;
+}
+
+/* —— 随手记输入卡（底部行：提示居左 · AI 归档居右） —— */
+.home-dashboard.home-v2 .cap-input {
+	width: 100%;
+	min-height: 72px;
+	resize: vertical;
+	padding: var(--s2);
+	border-radius: 10px;
+	font-size: 13px;
+	/* 玻璃质感：半透明底 + 模糊，与外层卡片同源（--glass-bg / blur 10px） */
+	background: var(--glass-bg, rgba(62, 142, 95, 0.055));
+	border: 1px solid var(--background-modifier-border);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	outline: none;
+	color: var(--text-normal);
+	transition: border-color 0.15s ease;
+}
+.home-dashboard.home-v2 .cap-input:focus {
+	border-color: var(--color-green, #5cb87a);
+}
+.home-dashboard.home-v2 .cap-foot {
+	display: flex;
+	align-items: center;
+	gap: var(--s2);
+	margin-top: var(--s1);
+}
+.home-dashboard.home-v2 .cap-hint {
+	flex: 1;
+	color: var(--text-faint);
+	font-size: 11px;
+}
+/* 主操作按钮（层级 1）：胶囊 + 强调色浅底/浅描边 + 强调色文字，无加粗 */
+.home-dashboard.home-v2 .card-act.act-strong {
+	cursor: pointer;
+	padding: 4px 14px;
+	border: 1px solid var(--background-modifier-border-focus);
+	box-shadow: none;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--color-green, #5cb87a);
+	background: var(--glow);
+	transition: filter 0.15s ease;
+}
+.theme-light .home-dashboard.home-v2 .card-act.act-strong {
+	color: #2e7d54;
+}
+.home-dashboard.home-v2 .card-act.act-strong:hover {
+	background: var(--glow);
+	/* 与 .is-solid 同款 hover：同一变量叠两层，浅底可见加深（不引入新色值） */
+	box-shadow: inset 0 0 0 999px var(--glow);
+	color: var(--color-green, #5cb87a);
+}
+.theme-light .home-dashboard.home-v2 .card-act.act-strong:hover {
+	color: #2e7d54;
+}
+
+/* —— 周回顾卡（洞 察 分区）：标题居左 · 生成按钮居右 + 空状态 —— */
+.home-dashboard.home-v2 .review-card {
+	padding: var(--s3);
+}
+.home-dashboard.home-v2 .review-head {
+	display: flex;
+	align-items: center;
+	gap: var(--s2);
+}
+.home-dashboard.home-v2 .review-title {
+	font-size: 14px;
+	font-weight: 700;
+}
+.home-dashboard.home-v2 .review-hint {
+	flex: 1;
+	color: var(--text-faint);
+	font-size: 11px;
+}
+.home-dashboard.home-v2 .review-empty {
+	margin-top: var(--s3);
+	padding: var(--s4);
+	border: 1px dashed var(--card-border);
+	border-radius: 10px;
+	text-align: center;
+	color: var(--text-faint);
+	font-size: 12px;
+}
+
+/* ============================================================
+   时间轴卡（issue IKW6K8）：色带 + 小时标注 + 翻天导航。
+   颜色走 --c 变量：选中态的类规则才能盖过它。
+   ============================================================ */
+.home-dashboard.home-v2 .dl-card { position: relative; }
+.home-dashboard.home-v2 .dl-card > h3 { padding-right: 110px; }
+/* 卡片标题后的迷你图例 */
+.home-dashboard.home-v2 .dl-h3-lg {
+	display: inline-flex; align-items: center; gap: 4px;
+	margin-left: 10px; font-size: 0.62em; font-weight: 400; color: var(--text-muted);
+}
+.home-dashboard.home-v2 .dl-h3-lg i {
+	width: 8px; height: 8px; border-radius: 2px; display: inline-block;
+}
+.home-dashboard.home-v2 .dl-nav { position: absolute; top: 8px; right: 12px; display: flex; gap: 6px; }
+.home-dashboard.home-v2 .dl-nav .card-act { position: static; }
+/* 选中态 chip（层级 3）：强调色浅底 + 强调色文字 + 浅描边，不加粗。
+   通用类 .is-solid，任何处于选中态的按钮都可挂（如「今天」） */
+.home-dashboard.home-v2 .card-act.is-solid {
+	background: var(--glow);
+	border-color: var(--background-modifier-border-focus);
+	color: var(--color-green, #5cb87a);
+}
+.theme-light .home-dashboard.home-v2 .card-act.is-solid { color: #2e7d54; }
+.home-dashboard.home-v2 .card-act.is-solid:hover {
+	background: var(--glow);
+	box-shadow: inset 0 0 0 999px var(--glow);
+	/* 文字保持基础色（暗色 #5cb87a / 亮色 #2e7d54），与其他按钮 hover 一致 */
+}
+.home-dashboard.home-v2 .dl-strip {
+	display: flex; gap: 1px; height: 20px; margin-top: 10px;
+	cursor: pointer;
+}
+/* 原用 overflow:hidden 裁圆角，会剪掉格子的 data-tip；改为两端格子各自圆角 */
+.home-dashboard.home-v2 .dl-strip > div:first-child { border-radius: 6px 0 0 6px; }
+.home-dashboard.home-v2 .dl-strip > div:last-child { border-radius: 0 6px 6px 0; }
+.home-dashboard.home-v2 .dl-strip > div {
+	flex: 1;
+	/* 玻璃质感：把 --c 折出 65% 透明度再叠模糊，与外层卡片同源（blur 10px）；
+	   未记录时回退到原有的浅灰半透明底 */
+	background: var(--c, var(--background-modifier-hover, rgba(120, 130, 120, 0.15)));
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+.home-dashboard.home-v2 .dl-strip > div.dl-strip-sel {
+	background: rgba(62, 142, 95, 0.55) !important;
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+/* color-mix 可用时把 --c 折出 65% 透明度，模糊才能透出花园背景（玻璃感来源） */
+@supports (background: color-mix(in srgb, red 65%, transparent)) {
+	.home-dashboard.home-v2 .dl-strip > div {
+		background: color-mix(in srgb, var(--c, rgba(120, 130, 120, 0.15)) 65%, transparent);
+	}
+}
+/* 色带下方的小时标注（HH），一格标注对应两个半小时格。
+   标注要对准整点格（前一个半小时格）的正下方：span 宽度覆盖两格，
+   文字居中后会落在两格中间，故再左移自身宽度的 25% */
+.home-dashboard.home-v2 .dl-hours { display: flex; gap: 1px; margin-top: 2px; }
+.home-dashboard.home-v2 .dl-hours span {
+	flex: 2; text-align: center; font-size: 0.58em; color: var(--text-faint);
+	transform: translateX(-25%);
+}
+.home-dashboard.home-v2 .dl-card-hint {
+	color: var(--text-faint); font-size: 11px; margin-top: 7px;
+}
+
+/* ============================================================
+   待办卡（行 动 左列）：头部标题+周统计，列表 + 底部虚线输入框
+   ============================================================ */
+.home-dashboard.home-v2 .todo-card {
+	padding: var(--s3);
+	/* 列表区弹性伸展内部滚动，底部新建行固定贴卡底 */
+	display: flex;
+	flex-direction: column;
+}
+.home-dashboard.home-v2 .todo-card .todo-body {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+}
+.home-dashboard.home-v2 .todo-card .todo-new { flex: none; }
+.home-dashboard.home-v2 .todo-head {
+	display: flex;
+	align-items: baseline;
+	gap: var(--s2);
+}
+.home-dashboard.home-v2 .todo-head-hint {
+	font-size: 11px;
+	color: var(--text-faint);
+}
+.home-dashboard.home-v2 .todo-card .todo-list {
+	margin-top: var(--s1);
+	/* 压掉主题的 gap:6px，行间距只靠 todo-row 的底部分隔线 */
+	gap: 0;
+}
+.home-dashboard.home-v2 .todo-row {
+	/* 压掉主题给 todo-row 的玻璃块底/整圈边框，只留行间分隔线 */
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--s2);
+	padding: 6px 0;
+	background: none;
+	border: none;
+	border-bottom: 1px solid var(--card-border);
+	border-radius: 0;
+	/* 行高基准：与最近新增卡的 recent-row 保持一致（43px，按钮撑出的自然高度） */
+	min-height: 43px;
+	box-sizing: border-box;
+}
+.home-dashboard.home-v2 .todo-main {
+	min-width: 0;
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+}
+.home-dashboard.home-v2 .todo-main a.internal-link {
+	color: var(--text-normal);
+	font-size: 13px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.home-dashboard.home-v2 .todo-main a.internal-link:hover { color: var(--color-green, #5cb87a); }
+.home-dashboard.home-v2 .todo-meta {
+	flex: none;
+	font-size: 11px;
+	color: var(--text-faint);
+}
+.home-dashboard.home-v2 .todo-ops {
+	flex: none;
+	display: flex;
+	gap: 6px;
+	/* 按钮/日期文字在行内垂直居中，日期与标题保持在同一条视线上 */
+	align-items: center;
+}
+.home-dashboard.home-v2 .todo-ops .todo-meta {
+	/* 消掉行高撑高造成的基线偏移，贴近标题文字的视觉中线 */
+	line-height: 13px;
+	margin-top: 1px;
+}
+/* 分段式一级按钮（跟进/完成）：胶囊整体，两段 1px 竖线无缝分隔。
+   规格对齐 .card-act.act-strong：强调色浅底 + 浅描边 + 强调色文字，无加粗 */
+.home-dashboard.home-v2 .seg {
+	display: inline-flex;
+	align-items: stretch;
+	overflow: hidden;
+	border-radius: 999px;
+	border: 1px solid var(--background-modifier-border-focus);
+	background: var(--glow);
+}
+.home-dashboard.home-v2 .seg-btn {
+	cursor: pointer;
+	font: inherit;
+	font-size: 11px;
+	font-weight: 400;
+	color: var(--color-green, #5cb87a);
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	padding: 4px 9px;
+	transition: box-shadow 0.15s ease;
+}
+.theme-light .home-dashboard.home-v2 .seg-btn {
+	color: #2e7d54;
+}
+.home-dashboard.home-v2 .seg-btn + .seg-btn {
+	/* 中间竖杠分隔，不用 gap/margin */
+	border-left: 1px solid var(--background-modifier-border-focus);
+}
+.home-dashboard.home-v2 .seg-btn:hover {
+	/* 与 .act-strong 同款叠层：同一变量叠两层，浅底可见加深（不引入新色值） */
+	box-shadow: inset 0 0 0 999px var(--glow);
+}
+/* 合并按钮：跟进|完成 两个可点分段放同一按钮内，分隔线不可选中。
+   二级按钮样式由 .card-act 提供（层级 2：透明底，hover 浮现浅底），这里只管内部排布 */
+.home-dashboard.home-v2 .todo-combo {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+.home-dashboard.home-v2 .todo-combo .todo-seg:hover {
+	color: var(--text-normal);
+}
+.home-dashboard.home-v2 .todo-combo .todo-sep {
+	color: var(--text-faint);
+	user-select: none;
+}
+/* 兼容旧标记（若存在） */
+.home-dashboard.home-v2 .todo-op { cursor: pointer; }
+.home-dashboard.home-v2 .todo-empty {
+	color: var(--text-faint);
+	font-size: 12px;
+	padding: var(--s2) 0;
+}
+/* 底部新建行：虚线框 + 裸输入框（input 本体只留光标与占位文字，
+   压掉主题的玻璃胶囊底/边框/focus 光晕） */
+.home-dashboard.home-v2 .todo-new {
+	/* 主题给 .todo-new 的 margin: 6px 0 12px，这里压掉 bottom 只留 top */
+	margin: var(--s2) 0 0;
+	display: flex;
+	align-items: center;
+	gap: var(--s1);
+	border: 1px dashed var(--card-border);
+	border-radius: 10px;
+	padding: calc(var(--s1) - 1px) var(--s2); /* 上下各收 1px，整行矮 2px */
+	background: none;
+	transition: border-color 0.15s ease;
+}
+.home-dashboard.home-v2 .todo-new:focus-within {
+	border: 1px dashed var(--color-green, #5cb87a);
+	box-shadow: none;
+}
+.home-dashboard.home-v2 .todo-input {
+	flex: 1;
+	min-width: 0;
+	border: none;
+	background: none;
+	box-shadow: none;
+	outline: none;
+	border-radius: 0;
+	padding: 2px 0;
+	color: var(--text-normal);
+	font-size: 13px;
+	caret-color: var(--color-green, #5cb87a);
+}
+.home-dashboard.home-v2 .todo-input:focus {
+	border: none;
+	background: none;
+	box-shadow: none;
+	outline: none;
+}
+
+/* ============================================================
+   草稿箱卡（issue IKW6KC）：新建/继续写作长文。draft-* 只补头布局
+   与行样式——插件视图不装主题也能用。
+   ============================================================ */
+.home-dashboard.home-v2 .draft-card { padding: var(--s3); }
+.home-dashboard.home-v2 .draft-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+/* 草稿箱「新增长文」视作主操作（层级 1），与 .act-strong 同款 */
+.home-dashboard.home-v2 .draft-head .card-act {
+	position: static;
+	box-shadow: none;
+	padding: 4px 14px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--color-green, #5cb87a);
+	background: var(--glow);
+	border-color: var(--background-modifier-border-focus);
+}
+.theme-light .home-dashboard.home-v2 .draft-head .card-act { color: #2e7d54; }
+.home-dashboard.home-v2 .draft-head .card-act:hover {
+	background: var(--glow);
+	box-shadow: inset 0 0 0 999px var(--glow);
+	color: var(--color-green, #5cb87a);
+}
+.theme-light .home-dashboard.home-v2 .draft-head .card-act:hover { color: #2e7d54; }
+.home-dashboard.home-v2 .draft-body { margin-top: var(--s1); }
+.home-dashboard.home-v2 .draft-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--s1);
+	padding: 4px 0;
+}
+.home-dashboard.home-v2 .draft-main {
+	min-width: 0;
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+}
+.home-dashboard.home-v2 .draft-link {
+	color: var(--text-normal);
+	font-size: 13px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.home-dashboard.home-v2 .draft-del {
+	flex: none;
+	border: 1px solid transparent;
+	box-shadow: none;
+	border-radius: 999px;
+	background: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 2px 10px;
+	font-size: 11px;
+	font-weight: 400;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+.home-dashboard.home-v2 .draft-del:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+/* ============================================================
+   Lucide 线性图标（lib/icon.ts putIcon）：Obsidian 内置 Lucide
+   （setIcon，同 lucide.dev 图形）。单色继承文字颜色（currentColor），
+   尺寸由 JS 写入的 --icon-size 决定（标题行 16 / 按钮内 14）。
+   不带 .home-dashboard.home-v2 前缀：草稿弹窗、长文编辑器等
+   前缀根之外的容器也要用。
+   ============================================================ */
+.dash-icon {
+	display: inline-flex;
+	align-items: center;
+	margin-right: 6px;
+	vertical-align: -0.15em;
+}
+.dash-icon svg {
+	width: var(--icon-size, 16px);
+	height: var(--icon-size, 16px);
+	stroke-width: 1.5;
+}
+
+/* ============================================================
+   长文编辑器（issue IKW6KC）：新 leaf 的会话级视图，根类 .lf-editor
+   （与 Home 视图的 .home-dashboard.home-v2 互相独立，不外泄）。
+   工具栏 + 左编辑右实时预览 + 落盘提示，复刻旧版 Home.md 编辑器形态。
+   ============================================================ */
+.lf-editor {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: 8px 12px 8px;
+	box-sizing: border-box;
+}
+.lf-editor .lf-bar {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-bottom: 8px;
+}
+/* 工具栏文字按钮（层级 2）：与主页 .card-act 同款 */
+.lf-editor .lf-btn {
+	border: 1px solid transparent;
+	box-shadow: none;
+	background: transparent;
+	color: var(--text-muted);
+	border-radius: 999px;
+	padding: 2px 10px;
+	cursor: pointer;
+	font-size: 11px;
+	font-weight: 400;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+.lf-editor .lf-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+.lf-editor .lf-bar-gap { flex: 1; }
+/* 主操作（层级 1）：与主页 .act-strong 同款 */
+.lf-editor .lf-btn.lf-promote {
+	padding: 4px 14px;
+	box-shadow: none;
+	font-size: 12px;
+	color: var(--color-green, #5cb87a);
+	background: var(--glow);
+	border-color: var(--background-modifier-border-focus);
+}
+.theme-light .lf-editor .lf-btn.lf-promote { color: #2e7d54; }
+.lf-editor .lf-btn.lf-promote:hover {
+	background: var(--glow);
+	box-shadow: inset 0 0 0 999px var(--glow);
+	color: var(--color-green, #5cb87a);
+}
+.theme-light .lf-editor .lf-btn.lf-promote:hover { color: #2e7d54; }
+.lf-editor .lf-split {
+	display: flex;
+	gap: 12px;
+	flex: 1;
+	min-height: 0;
+}
+.lf-editor .lf-input {
+	flex: 1;
+	min-width: 0;
+	resize: none;
+	line-height: 1.6;
+	font-size: 0.95em;
+}
+.lf-editor .lf-preview {
+	flex: 1;
+	min-width: 0;
+	padding: 4px 12px;
+	border: 1px solid var(--background-modifier-border, rgba(120, 130, 120, 0.2));
+	border-radius: 10px;
+	overflow: auto;
+}
+.lf-editor .lf-foot { margin-top: 6px; }
+.lf-editor .lf-hint { opacity: 0.7; font-size: 0.8em; }
+
+/* ============================================================
+   响应式（<1100px）：侧栏取消 sticky 改横向铺开（每块 flex:1 1 220px），
+   主区分区保持单列，待办/最近新增改上下堆叠
+   ============================================================ */
+@media (max-width: 1100px) {
+	.home-dashboard.home-v2 .dash {
+		grid-template-columns: 1fr;
+		padding: 0 var(--s2);
+	}
+	.home-dashboard.home-v2 .side-panel {
+		position: static;
+		margin-top: var(--s4);
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--s2);
+		background: none;
+		border: none;
+		padding: 0;
+	}
+	/* 模块各自成小卡横向铺开（盖掉桌面端的分隔线规则） */
+	.home-dashboard.home-v2 .side-panel > * {
+		flex: 1 1 220px;
+		background: var(--card-bg);
+		border: 1px solid var(--card-border);
+		border-radius: 12px;
+		padding: var(--s3);
+	}
+	.home-dashboard.home-v2 .side-panel > * + * {
+		border-top: 1px solid var(--card-border);
+		margin-top: 0;
+		padding-top: var(--s3);
+	}
+	.home-dashboard.home-v2 .sec-cols { grid-template-columns: 1fr; }
+	/* 窄屏单列堆叠时撤掉 absolute 填充，恢复自然高度 */
+	.home-dashboard.home-v2 .col-recent { position: static; }
+	.home-dashboard.home-v2 .col-recent .recent-card {
+		position: static;
+		inset: auto;
+	}
+	.home-dashboard.home-v2 .hd-header { flex-wrap: wrap; }
+}
+
+/* ------------------------------------------------------------------
+ * Element 风格 tooltip（data-tip 属性驱动，取代原生黑色 title）
+ * 背景/文字/描边全部走主题变量，贴合当前主题；箭头与气泡同底色。
+ * ------------------------------------------------------------------ */
+.home-dashboard.home-v2 [data-tip] {
+	position: relative;
+}
+/* [data-tip] 重复一次抬到 (0,4,0)，压过 .draft-head .card-act / .dl-nav .card-act
+   的 position: static（同为 4 个类，本段在文件末尾故后者生效） */
+.home-dashboard.home-v2 [data-tip][data-tip] {
+	position: relative;
+}
+/* [data-tip] 重复一次抬到 (0,4,0)，压过 .draft-head .card-act / .dl-nav .card-act
+   的 position: static（同为 4 个类，本段在文件末尾故后者生效） */
+.home-dashboard.home-v2 [data-tip][data-tip] {
+	position: relative;
+}
+/* 卡片自带 backdrop-filter 形成独立层叠上下文，tip 的 z-index 出不了本卡；
+   悬停时把整张卡抬到兄弟卡之上，tip 才能盖过相邻块（如待办卡、记录热力）。
+   注意只提 z-index、不动 position：.side-panel 自身也是 .dash-card 且为 sticky，
+   覆盖成 relative 会让侧栏脱离 sticky 掉回文档流（表现为整块下移） */
+.home-dashboard.home-v2 .dash-card:has([data-tip]:hover) {
+	z-index: 999;
+}
+.home-dashboard.home-v2 [data-tip]::after {
+	content: attr(data-tip);
+	position: absolute;
+	left: 50%;
+	bottom: calc(100% + 9px);
+	transform: translateX(-50%) translateY(3px);
+	z-index: 100;
+	width: max-content;
+	max-width: 260px;
+	padding: 6px 10px;
+	border-radius: 6px;
+	border: 1px solid var(--card-border);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	font-size: 12px;
+	line-height: 1.5;
+	font-weight: normal;
+	white-space: normal;
+	text-align: center;
+	box-shadow: var(--shadow-s, 0 4px 12px rgba(0, 0, 0, 0.12));
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+}
+.home-dashboard.home-v2 [data-tip]::before {
+	content: "";
+	position: absolute;
+	left: 50%;
+	bottom: calc(100% + 5px);
+	transform: translateX(-50%) rotate(45deg);
+	z-index: 99;
+	width: 9px;
+	height: 9px;
+	border-radius: 1px;
+	background: var(--background-secondary);
+	border-top: 1px solid var(--card-border);
+	border-left: 1px solid var(--card-border);
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: opacity 0.15s ease, visibility 0.15s;
+}
+.home-dashboard.home-v2 [data-tip]:hover::after,
+.home-dashboard.home-v2 [data-tip]:focus-visible::after {
+	opacity: 1;
+	visibility: visible;
+	transform: translateX(-50%) translateY(0);
+}
+.home-dashboard.home-v2 [data-tip]:hover::before,
+.home-dashboard.home-v2 [data-tip]:focus-visible::before {
+	opacity: 1;
+	visibility: visible;
+}
+
+/* ===== 详情弹窗（待办/最近新增行点击呼出）：玻璃模糊浮层 ===== */
+/* 浮层挂在 .home-dashboard 根内（与卡片同 backdrop 取样树，blur 到竹子），
+   fixed 铺满视口；根滚动时也盖满整屏，不随内容滚走 */
+.home-dashboard.home-v2 .detail-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: var(--s4);
+	background: rgba(20, 30, 24, 0.25);
+	backdrop-filter: blur(2px);
+	-webkit-backdrop-filter: blur(2px);
+}
+.home-dashboard.home-v2 .detail-modal {
+	width: min(760px, 100%);
+	max-height: min(82vh, 760px);
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	overflow: hidden; /* 弹窗自身不出横向滚动，宽内容由内层裁剪 */
+	border-radius: 16px;
+	/* 不借 --glass-bg：主题（Suishouji）把它定成 5% 不透明度（Invariant 6）。
+	   色相贴卡片玻璃（淡绿），~80% 实底 + 强 blur：有玻璃感、文字清晰 */
+	background: rgba(240, 247, 243, 0.8);
+	backdrop-filter: blur(18px) saturate(1.2);
+	-webkit-backdrop-filter: blur(18px) saturate(1.2);
+	box-shadow: 0 12px 40px rgba(20, 40, 28, 0.18);
+}
+.theme-dark .home-dashboard.home-v2 .detail-modal {
+	background: rgba(32, 44, 36, 0.82);
+}
+.home-dashboard.home-v2 .detail-head {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--s1);
+	padding: var(--s3) var(--s3) var(--s2);
+	border-bottom: 1px solid var(--card-border);
+	flex: none;
+}
+/* 标题列：h3 在上、属性 chips 紧贴其下（分隔线之上），关闭钮独立在右 */
+.home-dashboard.home-v2 .detail-head-main {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.home-dashboard.home-v2 .detail-head h3 {
+	margin: 0;
+	font-size: 15px;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.home-dashboard.home-v2 .detail-close {
+	flex: none;
+}
+.home-dashboard.home-v2 .detail-body {
+	flex: 1;
+	min-height: 0;
+	min-width: 0;
+	overflow-y: auto;
+	overflow-x: hidden; /* markdown 宽内容（长词/表格/主题 hr 边距）只裁不撑 */
+	padding: var(--s3);
+}
+.home-dashboard.home-v2 .detail-body > * {
+	max-width: 100%;
+}
+/* 待办区：跟进列表 + 记跟进 + 完成 */
+.home-dashboard.home-v2 .detail-todo {
+	flex: none;
+	border-top: 1px solid var(--card-border);
+	padding: var(--s2) var(--s3);
+	display: flex;
+	flex-direction: column;
+	gap: var(--s2);
+}
+.home-dashboard.home-v2 .detail-fu-list {
+	max-height: 180px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.home-dashboard.home-v2 .detail-fu-empty {
+	color: var(--text-faint);
+	font-size: 12px;
+	padding: 4px 0;
+}
+.home-dashboard.home-v2 .detail-fu-row {
+	display: flex;
+	align-items: center;
+	gap: var(--s1);
+	font-size: 12.5px;
+}
+.home-dashboard.home-v2 .detail-fu-text {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.home-dashboard.home-v2 .detail-fu-time {
+	color: var(--text-faint);
+	flex: none;
+}
+.home-dashboard.home-v2 .detail-fu-del {
+	flex: none;
+	font-size: 11px;
+	padding: 2px 8px;
+	/* hover 反馈走 .card-act 二级按钮默认样式（底色高亮、无阴影）——
+	   之前的「阴影」实为 data-tip 气泡（b17dbf15），此处不再特判 */
+}
+
+/* —— 属性行：frontmatter 摘要 chips（分类/状态/标签/时间） —— */
+.home-dashboard.home-v2 .detail-props {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	/* 已在 head 内（标题正下方），不再另加外边距 */
+}
+.home-dashboard.home-v2 .detail-prop {
+	font-size: 11px;
+	color: var(--text-faint);
+	background: rgba(90, 110, 95, 0.08);
+	border: 1px solid var(--card-border);
+	border-radius: 999px;
+	padding: 1px 8px;
+	white-space: nowrap;
+}
+.home-dashboard.home-v2 .detail-todo .todo-new {
+	margin: 0;
+}
+.home-dashboard.home-v2 .detail-foot {
+	display: flex;
+	justify-content: flex-end;
+}
