@@ -6,7 +6,7 @@
 
 一个 [Obsidian](https://obsidian.md) 首页插件:打开 Obsidian 就能看到一个汇总了随手记、待办、日记和回顾的首页,配上会轻轻摇动的竹林背景。
 
-![Home Dashboard 截图](docs/screenshots/home.png)
+![Home Dashboard 截图](docs/screenshots/home-view.png)
 
 ## 它能做什么
 
@@ -52,7 +52,7 @@ dashboard: open Obsidian and you land on a Home page that gathers your quick
 notes, todos, daily logs and weekly reviews — with a gently swaying bamboo
 garden in the background.
 
-![Home Dashboard screenshot](docs/screenshots/home.png)
+![Home Dashboard screenshot](docs/screenshots/home-view.png)
 
 ### What it does
 
