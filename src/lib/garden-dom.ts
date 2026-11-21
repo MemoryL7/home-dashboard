@@ -86,7 +86,17 @@ export function mountGarden(host: HTMLElement): GardenMount {
 	const fall = host.createDiv({ cls: "bg-fall" });
 	const leafEls: HTMLElement[] = FALL_LEAVES.map((f) => {
 		const sp = fall.createDiv({ cls: "fall-leaf" });
-		sp.innerHTML = `<svg width="44" height="18" viewBox="0 0 44 18"><path d="M2 9 Q 15 1.5 42 9 Q 15 16.5 2 9 Z" fill="${f.col}"/></svg>`;
+		// 逐节点拼 SVG（不用 innerHTML——插件市场审核禁止字符串注入 DOM）
+		const NS = "http://www.w3.org/2000/svg";
+		const svg = document.createElementNS(NS, "svg");
+		svg.setAttribute("width", "44");
+		svg.setAttribute("height", "18");
+		svg.setAttribute("viewBox", "0 0 44 18");
+		const path = document.createElementNS(NS, "path");
+		path.setAttribute("d", "M2 9 Q 15 1.5 42 9 Q 15 16.5 2 9 Z");
+		path.setAttribute("fill", f.col);
+		svg.appendChild(path);
+		sp.appendChild(svg);
 		return sp;
 	});
 

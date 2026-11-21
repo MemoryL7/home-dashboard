@@ -6,9 +6,9 @@ import { putIcon, ICON_BTN } from "./icon";
 /**
  * Command-palette front end of quick capture: a Modal with one textarea.
  * Thin DOM shell — the pipeline itself lives in lib/capture.ts, the settings
- * glue in lib/capture-ui.ts. Inline styles are deliberate: modal content
- * lives outside the `.home-dashboard.home-v2` root, so styles.css rules
- * (which must all carry that prefix) would not reach it.
+ * glue in lib/capture-ui.ts. Styling uses the plugin-owned `hd-*` classes:
+ * modal content lives outside the `.home-dashboard.home-v2` root, so scoped
+ * styles.css rules would not reach it (see the exemption note in styles.css).
  */
 export class CaptureModal extends Modal {
 	private plugin: HomeDashboardPlugin;
@@ -23,12 +23,8 @@ export class CaptureModal extends Modal {
 		const input = this.contentEl.createEl("textarea", {
 			attr: { placeholder: "随手记点什么…（Ctrl+Enter 快速归类）" },
 		});
-		input.style.width = "100%";
-		input.style.minHeight = "96px";
-		const foot = this.contentEl.createDiv();
-		foot.style.display = "flex";
-		foot.style.justifyContent = "flex-end";
-		foot.style.marginTop = "8px";
+		input.addClass("hd-form-textarea");
+		const foot = this.contentEl.createDiv({ cls: "hd-form-footer" });
 		const button = foot.createEl("button", {}, (btn) => {
 			putIcon(btn, "sparkles", ICON_BTN);
 			btn.createSpan({ text: " AI 归类" });

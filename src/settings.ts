@@ -138,7 +138,7 @@ export class HomeDashboardSettingTab extends PluginSettingTab {
 				.setDesc(desc)
 				.addTextArea((text) => {
 					text.inputEl.rows = 8;
-					text.inputEl.style.width = "100%";
+					text.inputEl.addClass("hd-settings-textarea");
 					return text
 						.setValue(this.plugin.settings[key])
 						.onChange(async (value) => {

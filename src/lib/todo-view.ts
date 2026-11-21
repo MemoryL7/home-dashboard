@@ -212,9 +212,9 @@ export function renderTodoCard(parent: HTMLElement, deps: TodoDeps): TodoCard {
 		if (pending.length > MAX_VISIBLE) {
 			const first = ul.firstElementChild as HTMLElement | null;
 			const h = first?.offsetHeight ?? 0;
-			if (h > 0) todoBody.style.maxHeight = `${h * MAX_VISIBLE + 4}px`;
+			if (h > 0) todoBody.setCssProps({ maxHeight: `${h * MAX_VISIBLE + 4}px` });
 		} else {
-			todoBody.style.maxHeight = "";
+			todoBody.setCssProps({ maxHeight: "" });
 		}
 	}
 

@@ -215,25 +215,19 @@ class FillModal extends Modal {
 		const input = this.contentEl.createEl("input", {
 			attr: { type: "text", placeholder: "这段时间做了什么…" },
 		});
-		input.style.width = "100%";
-		input.style.padding = "6px 10px";
-		input.style.borderRadius = "8px";
+		input.addClass("hd-form-input");
+		input.addClass("hd-daylog-input");
 		input.value = this.existing ? this.existing.desc || "" : "";
 		// 不用真实 radio：选择状态自己维护，保证严格互斥（点击谁谁选中，其余必为未选）
 		let picked = this.existing ? this.existing.type || "" : "";
-		const typeRow = this.contentEl.createDiv();
-		typeRow.style.display = "flex";
-		typeRow.style.flexWrap = "wrap";
-		typeRow.style.margin = "10px 0";
+		const typeRow = this.contentEl.createDiv({ cls: "hd-type-row" });
 		const opts: { key: string; lab: HTMLElement }[] = [];
 		const mkRadio = (key: string, zh: string, color: string, tip: string): void => {
 			const lab = typeRow.createDiv({ attr: { "data-tip": `${zh} · ${tip}` } });
+			lab.addClass("hd-type-opt");
 			lab.createEl("span", { text: zh });
-			lab.style.cssText =
-				"flex:1;display:inline-flex;align-items:center;justify-content:center;gap:4px;" +
-				"padding:5px 8px;font-size:0.9em;white-space:nowrap;cursor:pointer;" +
-				"border:1px solid var(--background-modifier-border);color:var(--text-normal);" +
-				`background:${hexA(color, 0.3)}`;
+			// 类型底色是运行时算出的动态值，走 setCssStyles（审核认可的动态样式出口）
+			lab.setCssStyles({ backgroundColor: hexA(color, 0.3) });
 			opts.push({ key, lab });
 			lab.addEventListener("click", () => {
 				picked = key;
@@ -242,18 +236,13 @@ class FillModal extends Modal {
 		};
 		const updateRadios = (): void =>
 			opts.forEach((o) => {
-				// 选中只用高亮描边表示（outline 不占布局），不改背景
-				o.lab.style.outline = o.key === picked ? "2px solid var(--background-modifier-border)" : "none";
-				o.lab.style.outlineOffset = "-2px";
+				o.lab.toggleClass("is-picked", o.key === picked);
 			});
 		mkRadio("", "未分类", UNCATEGORIZED_COLOR, "尚未归类的时间");
 		for (const t of TYPES) mkRadio(t.key, t.zh, t.color, t.tip);
 		updateRadios();
 
-		const btns = this.contentEl.createDiv();
-		btns.style.display = "flex";
-		btns.style.gap = "8px";
-		btns.style.justifyContent = "flex-end";
+		const btns = this.contentEl.createDiv({ cls: "hd-form-actions" });
 		const ok = btns.createEl("button", { text: "确定" });
 		const cancel = btns.createEl("button", { text: "取消" });
 		cancel.addEventListener("click", () => this.close());

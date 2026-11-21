@@ -1,7 +1,7 @@
 {
 	"id": "home-dashboard",
 	"name": "Home Dashboard",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"minAppVersion": "1.5.0",
 	"description": "随手记 Home 仪表盘。",
 	"author": "MemoryL7",

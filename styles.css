@@ -7,9 +7,14 @@
  * view container so ordinary markdown pages are never affected, and
  * `.home-v2` gives later versions a structural-override hook.
  *
- * Sole exemption: rules on the view's own container
- * (`[data-type="home-dashboard-view"]`), which is already plugin-scoped by
- * Obsidian's data-type attribute.
+ * Exemptions:
+ * 1. rules on the view's own container
+ *    (`[data-type="home-dashboard-view"]`), which is already plugin-scoped by
+ *    Obsidian's data-type attribute;
+ * 2. rules on the `hd-*` classes below, used inside Modals and the settings
+ *    tab — those live outside the `.home-dashboard.home-v2` root (modals are
+ *    appended to document.body), so the scoped prefix would never match them.
+ *    The `hd-` namespace keeps them plugin-owned.
  */
 
 .workspace-leaf-content[data-type="home-dashboard-view"] {
@@ -1408,4 +1413,56 @@ body .home-dashboard.home-v2 .bg-garden {
 .home-dashboard.home-v2 .detail-foot {
 	display: flex;
 	justify-content: flex-end;
+}
+
+/* ============================================================
+ * Modal & settings form classes (hd-* namespace, see header note).
+ * Shared by capture / daylog / longform title modals and settings.
+ * ============================================================ */
+.hd-form-textarea {
+	width: 100%;
+	min-height: 96px;
+}
+.hd-form-input {
+	width: 100%;
+}
+.hd-daylog-input {
+	padding: 6px 10px;
+	border-radius: 8px;
+}
+.hd-form-footer {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 8px;
+}
+.hd-type-row {
+	display: flex;
+	flex-wrap: wrap;
+	margin: 10px 0;
+}
+.hd-type-opt {
+	flex: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	padding: 5px 8px;
+	font-size: 0.9em;
+	white-space: nowrap;
+	cursor: pointer;
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-normal);
+}
+/* 选中只用高亮描边表示（outline 不占布局），不改背景 */
+.hd-type-opt.is-picked {
+	outline: 2px solid var(--background-modifier-border);
+	outline-offset: -2px;
+}
+.hd-form-actions {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+}
+.hd-settings-textarea {
+	width: 100%;
 }

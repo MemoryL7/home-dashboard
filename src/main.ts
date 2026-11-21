@@ -1,6 +1,6 @@
 import { Plugin, Notice, WorkspaceLeaf, requestUrl } from "obsidian";
 import { HomeView } from "./home-view";
-import { chooseLeaf, HOME_VIEW_TYPE } from "./lib/choose-leaf";
+import { chooseLeaf, HOME_VIEW_TYPE, revealLeafSafe } from "./lib/choose-leaf";
 import { LongformEditorView, LONGFORM_VIEW_TYPE } from "./lib/longform-view";
 
 import {
@@ -130,6 +130,6 @@ export default class HomeDashboardPlugin extends Plugin {
 		);
 		if (!leaf) return;
 		await leaf.setViewState({ type: HOME_VIEW_TYPE, active: true });
-		await workspace.revealLeaf(leaf);
+		await revealLeafSafe(workspace, leaf);
 	}
 }
