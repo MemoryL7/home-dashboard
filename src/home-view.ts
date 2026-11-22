@@ -3,7 +3,7 @@ import { HOME_VIEW_TYPE } from "./lib/choose-leaf";
 import type HomeDashboardPlugin from "./main";
 import { runCapture } from "./lib/capture-ui";
 import { mountBackground } from "./lib/bg-host";
-import { resolveBgId, type BgHandle } from "./lib/bg-core";
+import type { BgHandle } from "./lib/bg-core";
 import { renderDaylogCard, type DaylogCard } from "./lib/daylog-view";
 import { resolveConventions } from "./lib/conventions";
 import { PROFILE_DEFAULTS } from "./lib/profile";
@@ -66,7 +66,7 @@ export class HomeView extends ItemView {
 		// 背景（渲染器实现台，票 IKX1S2）：挂进视图根容器——与卡片同一 backdrop
 		// 取样树，卡片才能 blur 到背景；mountBackground 负责通用检测层
 		// （双击赏竹/--view-h/reduced-motion）与 body.home-v2 标记的增删
-		this.bg = mountBackground(root, resolveBgId(this.plugin.settings.bgId));
+		this.bg = mountBackground(root, this.plugin.settings.bgId);
 		// 双列栅格骨架：页头横贯两列（品牌只出现这一处），左侧栏 sticky 个人面板，
 		// 右主区四个分区（今天/行动/记录/洞察）
 		const dash = root.createDiv({ cls: "dash" });
@@ -407,7 +407,7 @@ export class HomeView extends ItemView {
 	refreshBackground(): void {
 		if (!this.rootEl) return;
 		this.bg?.destroy();
-		this.bg = mountBackground(this.rootEl, resolveBgId(this.plugin.settings.bgId));
+		this.bg = mountBackground(this.rootEl, this.plugin.settings.bgId);
 	}
 
 	async onClose(): Promise<void> {

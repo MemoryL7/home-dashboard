@@ -8,6 +8,7 @@ import {
 	type SceneNode,
 } from "./garden-scene";
 import {
+	DEFAULT_BG_ID,
 	registerBgRenderer,
 	type BgContext,
 	type BgHandle,
@@ -140,4 +141,4 @@ export const renderGardenSvg: BgRenderer = (host, _bgId, ctx: BgContext): BgHand
 	};
 };
 
-registerBgRenderer("garden-svg", renderGardenSvg);
+registerBgRenderer(DEFAULT_BG_ID, renderGardenSvg);

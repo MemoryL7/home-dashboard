@@ -1,5 +1,6 @@
 import "./garden-dom"; // 保证默认渲染器已注册（渲染器模块 import 时自注册）
 import {
+	DEFAULT_BG_ID,
 	getBgRenderer,
 	resolveBgId,
 	type BgContext,
@@ -29,7 +30,7 @@ export function mountBackground(host: HTMLElement, bgId: string): BgHandle {
 	} catch (e) {
 		// 渲染器抛错也回退默认渲染器，Home 页不因新实现开天窗
 		console.error(`bg-host: 渲染器 ${resolved} 挂载失败，回退默认`, e);
-		renderer = getBgRenderer("garden-svg")(host, "garden-svg", ctx);
+		renderer = getBgRenderer(DEFAULT_BG_ID)(host, DEFAULT_BG_ID, ctx);
 	}
 
 	/* —— 视图高度同步：把视图根的实际可视高写进 --view-h，供 .garden-svg /
