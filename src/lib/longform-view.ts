@@ -16,7 +16,6 @@ import { ItemView, MarkdownRenderer, Modal, Notice, WorkspaceLeaf, type TFile } 
 import type HomeDashboardPlugin from "../main";
 import { splitFrontmatter, applyMdAction, type MdAction } from "./longform-core";
 import { createLongformDraft, runPromote } from "./draft-ui";
-import { revealLeafSafe } from "./choose-leaf";
 import { putIcon, ICON_BTN } from "./icon";
 
 /** 编辑器视图类型（仅本会话内有效——见文件头注释）。 */
@@ -40,7 +39,7 @@ const TOOLBAR: { label?: string; icon?: string; action: MdAction; title: string 
 export async function openLongformEditor(plugin: HomeDashboardPlugin, file: TFile): Promise<void> {
 	const leaf = plugin.app.workspace.getLeaf("tab");
 	await leaf.setViewState({ type: LONGFORM_VIEW_TYPE, active: true, state: { file: file.path } });
-	await revealLeafSafe(plugin.app.workspace, leaf);
+	// setViewState({ active: true }) 已把标签带到前台，无需再 revealLeaf
 }
 
 /** 「新建长文」标题弹窗：定标题 → 建草稿文件 → 进编辑器。 */

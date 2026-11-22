@@ -1,4 +1,4 @@
-import type { Workspace, WorkspaceLeaf } from "obsidian";
+import type { WorkspaceLeaf } from "obsidian";
 
 /**
  * Pure seam for the "open or focus" behaviour: if a Home leaf already exists
@@ -20,14 +20,3 @@ export function chooseLeaf<
 }
 
 export const HOME_VIEW_TYPE = "home-dashboard-view";
-
-/**
- * Focus a leaf that was just activated via setViewState({ active: true }).
- * Workspace.revealLeaf is newer than our minAppVersion (1.5.0), so guard on
- * its existence — on older builds setViewState alone already brings the leaf
- * to the front, and revealLeaf is only a focus refinement.
- */
-export async function revealLeafSafe(workspace: Workspace, leaf: WorkspaceLeaf): Promise<void> {
-	const w = workspace as Workspace & { revealLeaf?: (leaf: WorkspaceLeaf) => unknown };
-	if (typeof w.revealLeaf === "function") await w.revealLeaf(leaf);
-}
