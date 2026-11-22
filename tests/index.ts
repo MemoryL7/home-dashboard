@@ -13,4 +13,5 @@ import "./longform-core.test";
 import "./weekly-review-core.test";
 import "./call-ai.test";
 import "./lifecycle-core.test";
+import "./bg-core.test";
 import "./logo-core.test";

@@ -2,7 +2,8 @@ import { ItemView, MarkdownRenderer, Notice, WorkspaceLeaf, moment, normalizePat
 import { HOME_VIEW_TYPE } from "./lib/choose-leaf";
 import type HomeDashboardPlugin from "./main";
 import { runCapture } from "./lib/capture-ui";
-import { mountGarden, type GardenMount } from "./lib/garden-dom";
+import { mountBackground } from "./lib/bg-host";
+import { resolveBgId, type BgHandle } from "./lib/bg-core";
 import { renderDaylogCard, type DaylogCard } from "./lib/daylog-view";
 import { resolveConventions } from "./lib/conventions";
 import { PROFILE_DEFAULTS } from "./lib/profile";
@@ -29,7 +30,8 @@ import { putIcon, ICON_TITLE, ICON_BTN } from "./lib/icon";
  */
 export class HomeView extends ItemView {
 	private plugin: HomeDashboardPlugin;
-	private garden: GardenMount | null = null;
+	private rootEl: HTMLElement | null = null;
+	private bg: BgHandle | null = null;
 	private daylog: DaylogCard | null = null;
 	private recentEl: HTMLElement | null = null;
 	private sideStatsEl: HTMLElement | null = null;
@@ -60,9 +62,11 @@ export class HomeView extends ItemView {
 		const root = this.contentEl.createDiv({
 			cls: "home-dashboard home-v2",
 		});
-		// 竹园场景（背景/飘叶/赏竹）：挂进视图根容器——与卡片同一 backdrop 取样树，
-		// 卡片才能 blur 到竹子；mountGarden 负责 body.home-v2 全局标记的增删
-		this.garden = mountGarden(root);
+		this.rootEl = root;
+		// 背景（渲染器实现台，票 IKX1S2）：挂进视图根容器——与卡片同一 backdrop
+		// 取样树，卡片才能 blur 到背景；mountBackground 负责通用检测层
+		// （双击赏竹/--view-h/reduced-motion）与 body.home-v2 标记的增删
+		this.bg = mountBackground(root, resolveBgId(this.plugin.settings.bgId));
 		// 双列栅格骨架：页头横贯两列（品牌只出现这一处），左侧栏 sticky 个人面板，
 		// 右主区四个分区（今天/行动/记录/洞察）
 		const dash = root.createDiv({ cls: "dash" });
@@ -398,16 +402,25 @@ export class HomeView extends ItemView {
 		}
 	}
 
+	/** 设置热切换背景（票 IKX1S2）：旧渲染器 destroy → 新渲染器挂载，
+	 *  不重开视图；卡片等其余内容原地不动。 */
+	refreshBackground(): void {
+		if (!this.rootEl) return;
+		this.bg?.destroy();
+		this.bg = mountBackground(this.rootEl, resolveBgId(this.plugin.settings.bgId));
+	}
+
 	async onClose(): Promise<void> {
-		// 先停场景（rAF/点击监听/body 全局标记）与时间轴的 document 监听，再清容器
+		// 先停背景（rAF/点击监听/body 全局标记）与时间轴的 document 监听，再清容器
 		closeDetailModal(); // 详情弹窗的 Esc 监听挂 document，随视图一起摘
-		this.garden?.destroy();
+		this.bg?.destroy();
+		this.bg = null;
+		this.rootEl = null;
 		this.daylog?.destroy();
 		this.daylog = null;
 		this.todoCard?.destroy();
 		this.todoCard = null;
 		this.draftCard = null;
-		this.garden = null;
 		this.contentEl.empty();
 	}
 }

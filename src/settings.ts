@@ -4,6 +4,7 @@ import { HOME_VIEW_TYPE } from "./lib/choose-leaf";
 import { DEFAULT_CONVENTIONS, type ConventionsInput } from "./lib/conventions";
 import { LOGO_DIR_DEFAULT } from "./lib/logo-core";
 import { PROFILE_DEFAULTS } from "./lib/profile";
+import { BG_OPTIONS, DEFAULT_BG_ID, resolveBgId } from "./lib/bg-core";
 
 /**
  * Plugin settings. `apiKey` lives only in the plugin's data.json (inside
@@ -30,6 +31,8 @@ export interface HomeDashboardSettings extends ConventionsInput {
 	profileTagline: string;
 	/** 拖入/粘贴 logo 图片的落点目录（点目录在文件树中隐藏，如 .assets）。 */
 	logoDir: string;
+	/** Home 页背景渲染器（票 IKX1S2）：bg-core 注册表里的实现 id，默认 garden-svg。 */
+	bgId: string;
 }
 
 export const DEFAULT_SETTINGS: HomeDashboardSettings = {
@@ -44,6 +47,7 @@ export const DEFAULT_SETTINGS: HomeDashboardSettings = {
 	profileLogo: PROFILE_DEFAULTS.logo,
 	profileTagline: PROFILE_DEFAULTS.tagline,
 	logoDir: LOGO_DIR_DEFAULT,
+	bgId: DEFAULT_BG_ID,
 };
 
 export class HomeDashboardSettingTab extends PluginSettingTab {
@@ -86,6 +90,22 @@ export class HomeDashboardSettingTab extends PluginSettingTab {
 			"profileLogo",
 		);
 		profileField("签名", "名字下方的一句话签名。", "profileTagline");
+
+		new Setting(containerEl).setName("背景").setHeading();
+		new Setting(containerEl)
+			.setName("背景渲染器")
+			.setDesc("Home 页背景的实现方式，切换即时生效（不重开视图）。")
+			.addDropdown((drop) => {
+				for (const opt of BG_OPTIONS) drop.addOption(opt.id, opt.label);
+				drop.setValue(resolveBgId(this.plugin.settings.bgId)).onChange(async (value) => {
+					this.plugin.settings.bgId = value;
+					await this.plugin.saveSettings();
+					// 打开中的 Home 视图热切换：旧渲染器 destroy → 新渲染器挂载
+					for (const leaf of this.app.workspace.getLeavesOfType(HOME_VIEW_TYPE)) {
+						(leaf.view as { refreshBackground?: () => void }).refreshBackground?.();
+					}
+				});
+			});
 
 		new Setting(containerEl).setName("启动").setHeading();
 		new Setting(containerEl)

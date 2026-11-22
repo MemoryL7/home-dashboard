@@ -5,18 +5,24 @@ import {
 	makeRng,
 	swayAngle,
 	leafPose,
-	ZEN_BLANK_GUARD,
-	zenToggle,
 	type SceneNode,
 } from "./garden-scene";
-import { BODY_CLEANUP_CLASSES } from "./lifecycle-core";
+import {
+	registerBgRenderer,
+	type BgContext,
+	type BgHandle,
+	type BgRenderer,
+} from "./bg-core";
 
 /**
  * 竹园场景的 DOM 绑定层（issue IKW6K9 的「薄 DOM 绑定」，不进测试）。
- * 场景计算全部在 garden-scene.ts（纯函数）；这里只做：
+ * 票 IKX1S2 起作为第一个背景渲染器接入统一挂载接口（bg-core）：本模块只做
+ * 渲染器自己的事——
  * - 把纯层产出的虚节点/位姿接到真实 DOM 与真实 rAF 时钟上；
- * - 赏竹显隐的点击接线（状态机本身在纯层）；
- * - body.home-v2 / home-zen 全局标记的增删（不泄漏）。
+ * - 模块级缓存移动而非重建（不变量 2）。
+ * 通用检测层（双击赏竹状态机、--view-h 测量与 ResizeObserver、
+ * prefers-reduced-motion 探测、body.home-v2 标记）上收到 bg-host.ts，
+ * 这里只消费 ctx.reduced，不再重复探测。
  */
 
 const NS = "http://www.w3.org/2000/svg";
@@ -48,18 +54,18 @@ function adapt(el: SVGElement): SceneNode {
 	return node;
 }
 
-export interface GardenMount {
-	/** 视图关闭时调用：停 rAF、摘点击监听、摘 body 全局标记。 */
-	destroy(): void;
-}
-
 /**
- * 挂载竹园场景：三层景深背景（复用缓存的 svg）+ 飘叶 + 摆动 rAF + 赏竹点击。
- * host 需在卡片之下（z-index / DOM 顺序在前），卡片才能 backdrop-blur 到竹子。
+ * garden-svg 渲染器：三层景深背景（复用缓存的 svg）+ 飘叶 + 摆动 rAF。
+ * host 需在卡片之下（z-index / DOM 顺序在前），卡片才能 backdrop-blur 到竹子；
+ * 赏竹显隐由 bg-host 切视图根 class，渲染器的 setZen 只记录状态
+ * （现观感纯 CSS，未来渲染器可在此暂停自己的动效）。
  */
-export function mountGarden(host: HTMLElement): GardenMount {
+export const renderGardenSvg: BgRenderer = (host, _bgId, ctx: BgContext): BgHandle => {
 	/* —— 背景：缓存命中则移动复用，未命中才画（同一 seed，构图确定性） —— */
 	const bg = host.createDiv({ cls: "bg-garden" });
+	// sticky 的流位置必须是宿主第一个子节点（热切换时宿主里已有 .dash 等
+	// 内容，createDiv 会追加到末尾，竹园会被钉到页面底部）——移回头部
+	host.prepend(bg);
 	const { svg } = getOrCreateGarden(gardenCache, () => {
 		const svgEl = document.createElementNS(NS, "svg");
 		// buildGarden 约定第一个 create("svg") 是根：直接路由到真实 svgEl，
@@ -87,7 +93,6 @@ export function mountGarden(host: HTMLElement): GardenMount {
 	const leafEls: HTMLElement[] = FALL_LEAVES.map((f) => {
 		const sp = fall.createDiv({ cls: "fall-leaf" });
 		// 逐节点拼 SVG（不用 innerHTML——插件市场审核禁止字符串注入 DOM）
-		const NS = "http://www.w3.org/2000/svg";
 		const svg = document.createElementNS(NS, "svg");
 		svg.setAttribute("width", "44");
 		svg.setAttribute("height", "18");
@@ -101,15 +106,11 @@ export function mountGarden(host: HTMLElement): GardenMount {
 	});
 
 	/* —— rAF 驱动：摆动 + 飘叶，全部绝对时间纯函数（garden-scene 提供） —— */
-	// 与 Home.md v2 不同处：插件视图没有 Dataview 重跑清空容器的问题，
-	// 因此不需要「空帧守护」MutationObserver（home-dashboard.md 不变量 4 的
-	// 有意分歧）；双缓冲复用只保留「竹园缓存移动而非重建」这一半。
-	const swayEls = Array.from(svg.querySelectorAll(".sway")) as SVGElement[];
-	const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+	// svg 短暂离树时跳过写样式但保持循环（退出只走 destroy()，不在循环里
+	// 自停——自停后无法重启会让重挂的场景永久冻结）
+	const swayEls = Array.from(svg.querySelectorAll<SVGElement>(".sway"));
 	let rafId = 0;
 	const tick = (t: number): void => {
-		// svg 短暂离树时跳过写样式但保持循环（视图关闭走 destroy() 停转，不在
-		// 循环里自停——自停后无法重启会让重挂的场景永久冻结）
 		if (svg.isConnected) {
 			for (const g of swayEls) {
 				const deg = swayAngle(t, Number(g.dataset.dur), Number(g.dataset.amp), Number(g.dataset.ph0));
@@ -125,45 +126,18 @@ export function mountGarden(host: HTMLElement): GardenMount {
 		}
 		rafId = requestAnimationFrame(tick);
 	};
-	if (!reduced) rafId = requestAnimationFrame(tick);
-
-	/* —— 视图高度同步：把 host 的实际可视高写进 --view-h，供 .garden-svg /
-	   .bg-fall 取用（替代 100vh，避免窗口高>视图高时把滚动高度撑到窗口高、
-	   内容不满一屏也出滚动条）。挂载时测一次，布局/窗口变化随 RO 更新 —— */
-	const syncViewH = (): void => {
-		const h = host.clientHeight;
-		if (h > 0) host.style.setProperty("--view-h", `${h}px`);
-	};
-	syncViewH();
-	const viewRo = new ResizeObserver(syncViewH);
-	viewRo.observe(host);
-
-	/* —— 赏竹显隐：唯一入口是双击空白区域（单击易误触；状态机在纯层 zenToggle） —— */
-	let zen = false;
-	const onBlankDblClick = (e: MouseEvent): void => {
-		const target = e.target as Element | null;
-		if (!target) return;
-		for (const sel of ZEN_BLANK_GUARD) {
-			if (target.closest(sel)) return; // 卡片/按钮等命中白名单即非空白
-		}
-		zen = zenToggle(zen, true);
-		// 显隐只作用于本视图根（host class）；不挂 body 级标记，避免样式泄漏
-		host.classList.toggle("home-zen", zen);
-	};
-	host.addEventListener("dblclick", onBlankDblClick);
-
-	document.body.classList.add("home-v2");
+	if (!ctx.reduced) rafId = requestAnimationFrame(tick);
 
 	return {
+		// 竹园的赏竹观感纯 CSS（bg-host 切视图根 class），渲染器侧无动效可暂停；
+		// 未来如需 JS 侧淡出/停帧，在此接线
+		setZen(_visible: boolean): void {},
 		destroy(): void {
 			if (rafId) cancelAnimationFrame(rafId);
-			viewRo.disconnect();
-			host.removeEventListener("dblclick", onBlankDblClick);
-			// remove 兜底清掉可能的历史残留：home-v2 随视图关闭摘除，不泄漏
-			//（class 清单以 lifecycle-core 为单一来源，卸载兜底用同一份）
-			document.body.classList.remove(...BODY_CLEANUP_CLASSES);
-			host.classList.remove("home-zen");
-			zen = false;
+			bg.remove();
+			fall.remove();
 		},
 	};
-}
+};
+
+registerBgRenderer("garden-svg", renderGardenSvg);
