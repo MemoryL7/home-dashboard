@@ -784,7 +784,7 @@ body .home-dashboard.home-v2 .bg-garden {
 	/* 文字保持基础色（暗色 #5cb87a / 亮色 #2e7d54），与其他按钮 hover 一致 */
 }
 .home-dashboard.home-v2 .dl-strip {
-	display: flex; gap: 1px; height: 20px; margin-top: 10px;
+	display: flex; gap: 0; height: 20px; margin-top: 10px;
 	cursor: pointer;
 }
 /* 原用 overflow:hidden 裁圆角，会剪掉格子的 data-tip；改为两端格子各自圆角 */
