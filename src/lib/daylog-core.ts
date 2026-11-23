@@ -1,15 +1,14 @@
 /* ============================================================
    daylog-core —— 时间轴 (Day Log) 数据层深模块（ADR 0006）
-   自 Scripts/daylog-core.js 原样迁入（票 05）：算法、序列化格式、
-   08:00 绕日日界（ADR 0005 修订 2026-11-12）全部不变。
+   自 Scripts/daylog-core.js 原样迁入（票 05）：算法、序列化格式不变；
+   日界由 08:00 改回自然日 0 点（ADR 0005 再修订 2026-11-23）。
    48 个半小时格 ↔ 「时间 | 事件 | 类型」表格的序列化/反序列化、
    Inbox 日文件的读存，全部藏在本模块后面。
-   「一天」自 08:00 起算至次日 0800：SLOTS 前 32 格为当天 08:00–24:00，
-   后 16 格为次日凌晨 00:00–08:00，文件日期 = 起始日——跨日时段自然
-   落到正确文件（凌晨 0-8 点记在「昨天」的日文件里）。
+   「一天」自 00:00 至 24:00：SLOTS 顺时针铺满一天，文件日期 = 自然日，
+   凌晨时段记在当天日文件里。
    interface（依赖注入，签名风格与 classify-core 一致，见 ADR 0004）：
      TYPES / TYPE_BY / SLOTS     活动五类常量与半小时格时刻表
-     dayDate(nowMs) → date       「今天」的 daylog 日（08:00 日界，ADR 0005 修订）
+     dayDate(nowMs) → date       「今天」的 daylog 日（自然日 0 点日界）
      parse(raw) → rows           正文表格文本 → 行对象
      serialize(rows) → raw       行对象 → 正文表格文本
      read(app, date) → rows      读 Inbox/<date>.md（不存在返回 {}）
@@ -49,10 +48,9 @@ export interface DaylogCore {
 	TYPE_BY: Record<string, DaylogType>;
 	SLOTS: string[];
 	PATH(date: string, inboxDir?: string): string;
-	/** 「一天」自 08:00 起算（ADR 0005 修订）：8 点前仍算前一个 daylog 日。
-	 *  2026-11 自视图层（daylog-view 的 daylogDayDate）收编——日界规则的两半
-	 *  （SLOTS 槽序与日期回退）从此在同一模块里，不再靠注释约定两处同步。
-	 *  入参 ms（本地时区解读），返回 'YYYY-MM-DD'；不引 moment，Node 可测。 */
+	/** 「今天」的 daylog 日：自然日 0 点日界（ADR 0005 再修订 2026-11-23，
+	 *  原 08:00 日界废止）。入参 ms（本地时区解读），返回 'YYYY-MM-DD'；
+	 *  不引 moment，Node 可测。 */
 	dayDate(nowMs: number): string;
 	parse(raw: string): Record<string, DaylogRow>;
 	serialize(rows: Record<string, DaylogRow>): string;
@@ -77,18 +75,17 @@ export const daylogCore: DaylogCore = (() => {
 	const SLOTS = Array.from({ length: 48 }, (_, i) => {
 		const hm = (n: number): string =>
 			`${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
-		// 自 08:00 绕日：i=0..31 覆盖 08:00→24:00（i=31 末点记作 24:00），i=32..47 为次日 00:00→08:00
-		const s = (480 + i * 30) % 1440;
-		const e = (480 + (i + 1) * 30) % 1440;
+		// 自 00:00 顺铺至 24:00：i=47 末点记作 24:00
+		const s = (i * 30) % 1440;
+		const e = ((i + 1) * 30) % 1440;
 		return `${hm(s)}-${e === 0 ? "24:00" : hm(e)}`;
 	});
 	const PATH = (date: string, inboxDir = "Inbox"): string => `${inboxDir}/${date}.md`;
 
-	// 08:00 日界：凌晨 0–8 点归属前一个 daylog 日（与 SLOTS 的后 16 格「次日凌晨」
-	// 是同一条规则的两半，改这里必须连着 SLOTS 一起看）
+	// 自然日 0 点日界：凌晨时段直接归当天（与 SLOTS 的 0 点槽序是同一条规则
+	// 的两半，改这里必须连着 SLOTS 一起看）
 	const dayDate = (nowMs: number): string => {
 		const d = new Date(nowMs);
-		if (d.getHours() < 8) d.setDate(d.getDate() - 1);
 		const y = d.getFullYear();
 		const m = String(d.getMonth() + 1).padStart(2, "0");
 		const day = String(d.getDate()).padStart(2, "0");

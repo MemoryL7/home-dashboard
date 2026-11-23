@@ -22,9 +22,9 @@ export type MomentLike = (input?: unknown) => Moment;
 /** 未分类时段的灰（色带与弹窗单选同款，单点来源）。 */
 const UNCATEGORIZED_COLOR = "#9aa39a";
 
-/** 格序 → 展示标签：后 16 格是次日凌晨（日界 08:00），加「次日」前缀。 */
+/** 格序 → 展示标签：全日 0 点起顺铺，无跨日段，直接用槽位时刻。 */
 function slotLabel(SLOTS: string[], idx: number): string {
-	return (idx >= 32 ? "次日 " : "") + SLOTS[idx];
+	return SLOTS[idx];
 }
 
 export interface DaylogViewDeps {
@@ -42,7 +42,7 @@ export interface DaylogCard {
 	destroy(): void;
 }
 
-/** 「今天」的 daylog 日（08:00 日界）已收编进 daylog-core 的 dayDate——
+/** 「今天」的 daylog 日（自然日 0 点日界）已收编进 daylog-core 的 dayDate——
     视图不再持有日界运算，ADR 0006 的「两处须同步改」注释同步作废。 */
 
 /** hex 颜色 → rgba（类型单选的淡色底；UI 着色，不属数据层）。 */
@@ -91,10 +91,10 @@ export function renderDaylogCard(parent: HTMLElement, deps: DaylogViewDeps): Day
 
 	const strip = card.createDiv({ cls: "dl-strip" });
 	{
-		// 色带下方的小时标注（HH）：每格对应两个半小时格；槽序自 08:00 绕日，
-		// 标注跟随槽序：08…23 后接次日 00…07
+		// 色带下方的小时标注（HH）：每格对应两个半小时格；槽序自 00:00 顺铺，
+		// 标注跟随槽序：00…23
 		const hours = card.createDiv({ cls: "dl-hours" });
-		for (let k = 0; k < 24; k++) hours.createEl("span", { text: String((8 + k) % 24).padStart(2, "0") });
+		for (let k = 0; k < 24; k++) hours.createEl("span", { text: String(k).padStart(2, "0") });
 	}
 	const hint = card.createDiv({ cls: "dl-card-hint", text: "左键滑动选格，松开即填内容" });
 
