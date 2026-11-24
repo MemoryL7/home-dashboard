@@ -94,8 +94,15 @@ export function openDetailModal(
 	};
 	document.addEventListener("keydown", onKey, true);
 	activeClose = close;
-	// 点背景空白处关弹窗；点卡片内不冒泡
-	overlay.addEventListener("click", close);
+	// 点背景空白处关弹窗；仅当按下与松开都在空白处才算「点空白」，
+	// 在卡片内选字拖到空白处松手不误关。卡片内点击不冒泡
+	let downOnOverlay = false;
+	overlay.addEventListener("pointerdown", (e) => {
+		downOnOverlay = e.target === overlay;
+	});
+	overlay.addEventListener("click", (e) => {
+		if (downOnOverlay && e.target === overlay) close();
+	});
 	modal.addEventListener("click", (e) => e.stopPropagation());
 
 	/* —— 头：标题（下方属性行） + 关闭 —— */
