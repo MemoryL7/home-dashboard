@@ -17,7 +17,7 @@ const note = (over: Partial<Parameters<typeof buildWeekReview>[0][number]> = {})
 	...over,
 });
 
-test("keeps only notes created within the trailing window, sorted oldest first", () => {
+void test("keeps only notes created within the trailing window, sorted oldest first", () => {
 	const digest = buildWeekReview(
 		[
 			note({ ctime: NOW - 8 * DAY, date: "11-10 09:00" }), // outside: dropped
@@ -33,7 +33,7 @@ test("keeps only notes created within the trailing window, sorted oldest first",
 	);
 });
 
-test("stats count records, distinct active days and pending todos", () => {
+void test("stats count records, distinct active days and pending todos", () => {
 	const digest = buildWeekReview(
 		[
 			note({ ctime: NOW - 2 * DAY, date: "11-16 10:00", status: "" }),
@@ -45,7 +45,7 @@ test("stats count records, distinct active days and pending todos", () => {
 	assert.deepEqual(digest?.stats, { count: 3, activeDays: 2, pending: 2 });
 });
 
-test("digest lines match the weekly-review wire format", () => {
+void test("digest lines match the weekly-review wire format", () => {
 	const digest = buildWeekReview([note()], NOW);
 	assert.equal(
 		digest?.digest,
@@ -53,7 +53,7 @@ test("digest lines match the weekly-review wire format", () => {
 	);
 });
 
-test("uncategorized notes fall back to 未分类, empty status omits the parens", () => {
+void test("uncategorized notes fall back to 未分类, empty status omits the parens", () => {
 	const digest = buildWeekReview([note({ category: "", status: "" })], NOW);
 	assert.equal(
 		digest?.digest,
@@ -61,13 +61,13 @@ test("uncategorized notes fall back to 未分类, empty status omits the parens"
 	);
 });
 
-test("long bodies are excerpted to 200 chars plus ellipsis", () => {
+void test("long bodies are excerpted to 200 chars plus ellipsis", () => {
 	const digest = buildWeekReview([note({ body: "a".repeat(300) })], NOW);
 	assert.ok(digest?.digest.includes("｜ " + "a".repeat(200) + "…"));
 	assert.ok(!digest?.digest.includes("a".repeat(201)));
 });
 
-test("returns null when the window holds no notes", () => {
+void test("returns null when the window holds no notes", () => {
 	assert.equal(buildWeekReview([note({ ctime: NOW - 30 * DAY })], NOW), null);
 	assert.equal(buildWeekReview([], NOW), null);
 });

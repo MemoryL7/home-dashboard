@@ -6,13 +6,13 @@ function leaf(viewType: string) {
 	return { view: { getViewType: () => viewType } };
 }
 
-test("chooses the existing Home leaf when one exists", () => {
+void test("chooses the existing Home leaf when one exists", () => {
 	const existing = leaf("home-dashboard-view");
 	const others = [leaf("markdown"), existing, leaf("empty")];
 	assert.equal(chooseLeaf(others, () => null), existing);
 });
 
-test("creates a new leaf when no Home leaf exists", () => {
+void test("creates a new leaf when no Home leaf exists", () => {
 	const created = leaf("home-dashboard-view");
 	assert.equal(
 		chooseLeaf([], () => created),
@@ -20,7 +20,7 @@ test("creates a new leaf when no Home leaf exists", () => {
 	);
 });
 
-test("passes the missing-leaf branch a callback only when needed", () => {
+void test("passes the missing-leaf branch a callback only when needed", () => {
 	let created = false;
 	chooseLeaf([leaf("home-dashboard-view")], () => {
 		created = true;

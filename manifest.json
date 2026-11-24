@@ -3,7 +3,7 @@
 	"name": "Home Dashboard",
 	"version": "0.1.2",
 	"minAppVersion": "1.5.0",
-	"description": "随手记 Home 仪表盘。",
+	"description": "随手记 Home 仪表盘：速记归类、待办、一日一记、周回顾与竹林首页。",
 	"author": "MemoryL7",
 	"isDesktopOnly": true
 }

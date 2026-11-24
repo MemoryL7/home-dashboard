@@ -80,7 +80,7 @@ export function renderDraftCard(parent: HTMLElement, deps: DraftCardDeps): Draft
 			refresh();
 			return;
 		}
-		openLongformEditor(deps.plugin, file);
+		void openLongformEditor(deps.plugin, file);
 	};
 
 	const remove = async (d: DraftPage): Promise<void> => {

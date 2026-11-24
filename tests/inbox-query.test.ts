@@ -16,7 +16,7 @@ const file = (
 	cache: { frontmatter: fm },
 });
 
-test("keeps only markdown notes inside the inbox dir", () => {
+void test("keeps only markdown notes inside the inbox dir", () => {
 	const pages = collectInbox(
 		[
 			file("Inbox/a.md", 1),
@@ -32,7 +32,7 @@ test("keeps only markdown notes inside the inbox dir", () => {
 	);
 });
 
-test("drops daylog files by frontmatter type", () => {
+void test("drops daylog files by frontmatter type", () => {
 	const pages = collectInbox([file("Inbox/d.md", 1, { type: "daylog" }), file("Inbox/e.md", 2)], "Inbox");
 	assert.deepEqual(
 		pages.map((p) => p.path),
@@ -40,7 +40,7 @@ test("drops daylog files by frontmatter type", () => {
 	);
 });
 
-test("drops longform drafts so they stay out of stats/heatmap (ticket 07 约定)", () => {
+void test("drops longform drafts so they stay out of stats/heatmap (ticket 07 约定)", () => {
 	const pages = collectInbox([file("Inbox/dr.md", 1, { status: "draft" }), file("Inbox/ok.md", 2)], "Inbox");
 	assert.deepEqual(
 		pages.map((p) => p.path),
@@ -48,7 +48,7 @@ test("drops longform drafts so they stay out of stats/heatmap (ticket 07 约定)
 	);
 });
 
-test("coerces frontmatter fields and defaults missing ones", () => {
+void test("coerces frontmatter fields and defaults missing ones", () => {
 	const pages = collectInbox(
 		[file("Inbox/a.md", 123, { summary: "s", category: "待办", status: "pending", tags: ["t1", 2, "t2"], related: "x" })],
 		"Inbox",
@@ -72,7 +72,7 @@ test("coerces frontmatter fields and defaults missing ones", () => {
 	assert.deepEqual(bare.related, undefined);
 });
 
-test("order follows input order (no hidden sorting)", () => {
+void test("order follows input order (no hidden sorting)", () => {
 	const pages = collectInbox([file("Inbox/z.md", 9), file("Inbox/a.md", 1)], "Inbox");
 	assert.deepEqual(
 		pages.map((p) => p.name),
@@ -80,7 +80,7 @@ test("order follows input order (no hidden sorting)", () => {
 	);
 });
 
-test("completedTs — localStamp 格式的 completed 解析为本地时刻，缺失/非法为 0", () => {
+void test("completedTs — localStamp 格式的 completed 解析为本地时刻，缺失/非法为 0", () => {
 	// 东八区机器上 "2026-11-20 23:41:07" 应解析为本地 23:41:07 的 ms
 	const ts = completedTs("2026-11-20 23:41:07");
 	const d = new Date(ts);

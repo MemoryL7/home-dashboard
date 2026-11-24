@@ -21,22 +21,22 @@ const page = (over: Partial<Parameters<typeof pendingTodos>[0][number]> = {}) =>
 });
 
 // relatedTargets：wikilink 字符串（含别名/子路径）、{path} 对象、数组、噪声
-test("relatedTargets wikilink forms", () => {
+void test("relatedTargets wikilink forms", () => {
 	assert.deepEqual(relatedTargets('"[[待办-办事申请]]"'), ["待办-办事申请"]);
 	assert.deepEqual(relatedTargets("[[某名|别名]]"), ["某名"]);
 	assert.deepEqual(relatedTargets("[[Inbox/某名#节]]"), ["Inbox/某名"]);
 });
-test("relatedTargets TFile-like path objects", () => {
+void test("relatedTargets TFile-like path objects", () => {
 	assert.deepEqual(relatedTargets([{ path: "Inbox/某名.md" }]), ["某名"]);
 });
-test("relatedTargets arrays and noise", () => {
+void test("relatedTargets arrays and noise", () => {
 	assert.deepEqual(relatedTargets(["[[a]]", null, 42, ""]), ["a"]);
 	assert.deepEqual(relatedTargets(undefined), []);
 	assert.deepEqual(relatedTargets("纯文本无链接"), []);
 });
 
 // pendingTodos：只留 pending，ctime 倒序
-test("pendingTodos filters and sorts newest first", () => {
+void test("pendingTodos filters and sorts newest first", () => {
 	const out = pendingTodos([
 		page({ name: "old", ctime: 1, status: "pending" }),
 		page({ name: "done", ctime: 2, status: "done" }),
@@ -49,7 +49,7 @@ test("pendingTodos filters and sorts newest first", () => {
 // doneInWeek：completed 优先，旧数据回退 ctime，窗口外不算
 const NOW = 1000 * 60 * 60 * 24 * 100; // 某固定「现在」
 const DAY = 24 * 3600 * 1000;
-test("doneInWeek prefers completed, falls back to ctime", () => {
+void test("doneInWeek prefers completed, falls back to ctime", () => {
 	const pages = [
 		page({ status: "done", completed: NOW - 2 * DAY, ctime: NOW - 90 * DAY }),
 		page({ status: "done", completed: 0, ctime: NOW - 3 * DAY }),
@@ -60,7 +60,7 @@ test("doneInWeek prefers completed, falls back to ctime", () => {
 });
 
 // followupCounts：一遍摊平，同名多跟进累计
-test("followupCounts tallies per target", () => {
+void test("followupCounts tallies per target", () => {
 	const pages = [
 		page({ name: "f1", related: '"[[todo-a]]"' }),
 		page({ name: "f2", related: ["[[todo-a]]", { path: "Inbox/todo-b.md" }] }),
@@ -68,12 +68,12 @@ test("followupCounts tallies per target", () => {
 	];
 	assert.deepEqual(followupCounts(pages), { "todo-a": 2, "todo-b": 1, "别的事": 1 });
 });
-test("followupCounts empty", () => {
+void test("followupCounts empty", () => {
 	assert.deepEqual(followupCounts([]), {});
 });
 
 // followupsFor：related 指向目标的页面，ctime 正序（先记在上）
-test("followupsFor filters by target, sorts oldest first", () => {
+void test("followupsFor filters by target, sorts oldest first", () => {
 	const pages = [
 		page({ name: "f2", ctime: 200, summary: "乙", related: '"[[todo-a]]"' }),
 		page({ name: "f1", ctime: 100, summary: "甲", related: '"[[todo-a]]"' }),
@@ -85,7 +85,7 @@ test("followupsFor filters by target, sorts oldest first", () => {
 });
 
 // stripFrontmatter：有 fm 去头，无 fm 原样
-test("stripFrontmatter removes leading yaml block", () => {
+void test("stripFrontmatter removes leading yaml block", () => {
 	assert.equal(stripFrontmatter("---\nstatus: pending\n---\n正文\n"), "正文\n");
 	assert.equal(stripFrontmatter("直接正文"), "直接正文");
 });

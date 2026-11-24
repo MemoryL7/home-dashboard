@@ -108,7 +108,7 @@ function opts(extra: Record<string, unknown> = {}) {
 	return { ai: AI, prompt: PROMPT, indexDir: "_Index", ...extra };
 }
 
-test("classify calls the AI with settings config + prompt and writes frontmatter", async () => {
+void test("classify calls the AI with settings config + prompt and writes frontmatter", async () => {
 	const { app, files } = fakeApp(BASE_FILES);
 	const { requestUrl, calls } = fakeRequestUrl(classifyResult);
 	const notices: string[] = [];
@@ -134,7 +134,7 @@ test("classify calls the AI with settings config + prompt and writes frontmatter
 	assert.ok(notices.some((m) => m.includes("归类完成")));
 });
 
-test("classify updates the _Index: top-level count, level-2 page, detail table", async () => {
+void test("classify updates the _Index: top-level count, level-2 page, detail table", async () => {
 	const { app, files } = fakeApp({
 		...BASE_FILES,
 		"_Index/00-top.md": "# 随手记索引 - 第1层：大类目录\n\n## 生活 (3条)\n→ [[生活|进入]]\n",
@@ -153,7 +153,7 @@ test("classify updates the _Index: top-level count, level-2 page, detail table",
 	assert.match(files["_Index/生活-购物.md"], /\| 2026-11-17 \| 旧记录/);
 });
 
-test("classify creates missing index pages from scratch", async () => {
+void test("classify creates missing index pages from scratch", async () => {
 	const { app, files } = fakeApp(BASE_FILES);
 	const { requestUrl } = fakeRequestUrl(classifyResult);
 
@@ -166,7 +166,7 @@ test("classify creates missing index pages from scratch", async () => {
 	assert.match(files["_Index/生活-购物.md"], /\| 时间 \| 摘要 \| 状态 \| 笔记 \|/);
 });
 
-test("classify with clearStatus:true clears status (draft→published, ADR 0002)", async () => {
+void test("classify with clearStatus:true clears status (draft→published, ADR 0002)", async () => {
 	const { app, files } = fakeApp(BASE_FILES);
 	const { requestUrl } = fakeRequestUrl(classifyResult);
 
@@ -177,7 +177,7 @@ test("classify with clearStatus:true clears status (draft→published, ADR 0002)
 	assert.equal(fm.trim(), "");
 });
 
-test("classify writes AI-returned status when present (overrides existing)", async () => {
+void test("classify writes AI-returned status when present (overrides existing)", async () => {
 	const { app, files } = fakeApp(BASE_FILES);
 	const { requestUrl } = fakeRequestUrl({ ...classifyResult, status: "pending" });
 
@@ -186,7 +186,7 @@ test("classify writes AI-returned status when present (overrides existing)", asy
 	assert.match(files[NOTE.path], /status: pending/);
 });
 
-test("classify parses AI answers wrapped in a ```json block", async () => {
+void test("classify parses AI answers wrapped in a ```json block", async () => {
 	const { app, files } = fakeApp(BASE_FILES);
 	const fenced = "```json\n" + JSON.stringify(classifyResult) + "\n```";
 	const { requestUrl } = fakeRequestUrl(fenced);
@@ -197,7 +197,7 @@ test("classify parses AI answers wrapped in a ```json block", async () => {
 	assert.match(files[NOTE.path], /category: 生活/);
 });
 
-test("classify fails gracefully on HTTP errors, bad JSON and missing key", async () => {
+void test("classify fails gracefully on HTTP errors, bad JSON and missing key", async () => {
 	const notices: string[] = [];
 	const { app } = fakeApp(BASE_FILES);
 
@@ -216,7 +216,7 @@ test("classify fails gracefully on HTTP errors, bad JSON and missing key", async
 	assert.ok(notices.some((m) => m.includes("API key")));
 });
 
-test("classify returns false (not a throw) when index writes fail — ADR 0004 contract", async () => {
+void test("classify returns false (not a throw) when index writes fail — ADR 0004 contract", async () => {
 	const notices: string[] = [];
 	const { app } = fakeApp(BASE_FILES);
 	app.vault.adapter.write = async () => {
@@ -229,7 +229,7 @@ test("classify returns false (not a throw) when index writes fail — ADR 0004 c
 	assert.ok(notices.some((m) => m.includes("归类错误")));
 });
 
-test("localStamp — 本地时区 24H 时间戳，不再输出 UTC（classified 时区修复）", () => {
+void test("localStamp — 本地时区 24H 时间戳，不再输出 UTC（classified 时区修复）", () => {
 	// 固定一个 UTC 时刻：2026-11-20T15:30:00Z。东八区应为 23:30，UTC 直取会差 8h。
 	const utc = new Date("2026-11-20T15:30:00Z");
 	const stamp = localStamp(utc);

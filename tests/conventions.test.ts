@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_CONVENTIONS, resolveConventions } from "../src/lib/conventions";
 
-test("defaults follow the vault's documented layout", () => {
+void test("defaults follow the vault's documented layout", () => {
 	assert.deepEqual(DEFAULT_CONVENTIONS, {
 		inboxDir: "Inbox",
 		indexDir: "_Index",
@@ -10,7 +10,7 @@ test("defaults follow the vault's documented layout", () => {
 	});
 });
 
-test("resolves stored settings verbatim when complete", () => {
+void test("resolves stored settings verbatim when complete", () => {
 	const resolved = resolveConventions({
 		inboxDir: "收集箱",
 		indexDir: "索引",
@@ -23,7 +23,7 @@ test("resolves stored settings verbatim when complete", () => {
 	});
 });
 
-test("falls back to defaults per-field for partial or empty settings", () => {
+void test("falls back to defaults per-field for partial or empty settings", () => {
 	assert.deepEqual(resolveConventions({ inboxDir: "收集箱" }), {
 		inboxDir: "收集箱",
 		indexDir: "_Index",
@@ -32,6 +32,6 @@ test("falls back to defaults per-field for partial or empty settings", () => {
 	assert.deepEqual(resolveConventions({}), DEFAULT_CONVENTIONS);
 });
 
-test("trims stray whitespace from configured paths", () => {
+void test("trims stray whitespace from configured paths", () => {
 	assert.equal(resolveConventions({ inboxDir: " Inbox " }).inboxDir, "Inbox");
 });

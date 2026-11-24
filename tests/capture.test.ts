@@ -22,7 +22,7 @@ function fakeVault(): { vault: any; files: Record<string, string> } {
 // Fixed clock: 2026-11-18 10:11:12 local time.
 const NOW = new Date(2026, 10, 18, 10, 11, 12);
 
-test("createQuickNote lands a frontmattered note in Inbox with a timestamped name", async () => {
+void test("createQuickNote lands a frontmattered note in Inbox with a timestamped name", async () => {
 	const { vault, files } = fakeVault();
 
 	const file = await createQuickNote(vault, { inboxDir: "Inbox" }, "买一棵竹子", NOW);
@@ -34,7 +34,7 @@ test("createQuickNote lands a frontmattered note in Inbox with a timestamped nam
 	assert.match(md, /---\n买一棵竹子\n$/);
 });
 
-test("summary is collapsed whitespace truncated to 30 chars; body keeps raw text", async () => {
+void test("summary is collapsed whitespace truncated to 30 chars; body keeps raw text", async () => {
 	const { vault, files } = fakeVault();
 	const text = "  买一棵竹子\n顺便   浇水  ";
 
@@ -55,7 +55,7 @@ test("summary is collapsed whitespace truncated to 30 chars; body keeps raw text
 	);
 });
 
-test("summary is YAML-quoted so ':' or quotes in the text cannot break the frontmatter", async () => {
+void test("summary is YAML-quoted so ':' or quotes in the text cannot break the frontmatter", async () => {
 	const { vault, files } = fakeVault();
 
 	await createQuickNote(
@@ -69,7 +69,7 @@ test("summary is YAML-quoted so ':' or quotes in the text cannot break the front
 	assert.match(md, /^summary: "读：三体 说\\"好\\"的"$/m);
 });
 
-test("respects a custom inboxDir convention", async () => {
+void test("respects a custom inboxDir convention", async () => {
 	const { vault, files } = fakeVault();
 
 	const file = await createQuickNote(vault, { inboxDir: "收集箱" }, "hi", NOW);

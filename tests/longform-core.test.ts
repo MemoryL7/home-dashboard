@@ -23,23 +23,23 @@ const draft = (
 	cache: { frontmatter: fm },
 });
 
-test("draftFilePath sanitizes title into a safe filename", () => {
+void test("draftFilePath sanitizes title into a safe filename", () => {
 	const path = draftFilePath("Inbox", '随手记:一些#想法[草稿]/2026', 0, []);
 	assert.equal(path, "Inbox/随手记一些想法草稿2026.md");
 });
 
-test("draftFilePath falls back to 未命名 when the title is all punctuation", () => {
+void test("draftFilePath falls back to 未命名 when the title is all punctuation", () => {
 	const path = draftFilePath("Inbox", "   ///  ", 0, []);
 	assert.equal(path, "Inbox/未命名.md");
 });
 
-test("draftFilePath appends a timestamp on collision", () => {
+void test("draftFilePath appends a timestamp on collision", () => {
 	const path = draftFilePath("Inbox", "竹林笔记", 1731900000000, ["Inbox/竹林笔记.md"]);
 	// stamp: local-time YYYY-MM-DD-HHmmss of the injected ms
 	assert.match(path, /^Inbox\/竹林笔记-\d{4}-\d{2}-\d{2}-\d{6}\.md$/);
 });
 
-test("draftFrontmatter marks status draft with empty classification slots", () => {
+void test("draftFrontmatter marks status draft with empty classification slots", () => {
 	const fm = draftFrontmatter();
 	assert.match(fm, /^---\n/);
 	assert.match(fm, /\nstatus: draft\n/);
@@ -47,7 +47,7 @@ test("draftFrontmatter marks status draft with empty classification slots", () =
 	assert.doesNotMatch(fm, /status: ''/);
 });
 
-test("collectDrafts keeps only Inbox markdown with status draft, newest first", () => {
+void test("collectDrafts keeps only Inbox markdown with status draft, newest first", () => {
 	const pages = collectDrafts(
 		[
 			draft("Inbox/草稿A.md", 100, { status: "draft" }),
@@ -62,25 +62,25 @@ test("collectDrafts keeps only Inbox markdown with status draft, newest first", 
 	assert.deepEqual(pages.map((p) => p.basename), ["草稿C", "草稿A"]);
 });
 
-test("collectDrafts tolerates missing frontmatter", () => {
+void test("collectDrafts tolerates missing frontmatter", () => {
 	const pages = collectDrafts([draft("Inbox/x.md", 1, {})], "Inbox");
 	assert.deepEqual(pages, []);
 });
 
-test("splitFrontmatter splits the leading fence and keeps it verbatim", () => {
+void test("splitFrontmatter splits the leading fence and keeps it verbatim", () => {
 	const fm = draftFrontmatter();
 	const [head, body] = splitFrontmatter(`${fm}正文第一段\n\n第二段\n`);
 	assert.equal(head, fm);
 	assert.equal(body, "正文第一段\n\n第二段\n");
 });
 
-test("splitFrontmatter treats fence-less content as all body", () => {
+void test("splitFrontmatter treats fence-less content as all body", () => {
 	const [head, body] = splitFrontmatter("没有 frontmatter 的笔记\n");
 	assert.equal(head, "");
 	assert.equal(body, "没有 frontmatter 的笔记\n");
 });
 
-test("splitFrontmatter only matches a fence at the very start", () => {
+void test("splitFrontmatter only matches a fence at the very start", () => {
 	const [head, body] = splitFrontmatter("正文里有\n---\n围栏\n");
 	assert.equal(head, "");
 	assert.equal(body, "正文里有\n---\n围栏\n");
@@ -88,37 +88,37 @@ test("splitFrontmatter only matches a fence at the very start", () => {
 
 /* —— applyMdAction：工具栏 Markdown 格式化 —— */
 
-test("applyMdAction wraps the selection with the marker", () => {
+void test("applyMdAction wraps the selection with the marker", () => {
 	const r = applyMdAction("前面 Selected 后面", 3, 11, "bold");
 	assert.equal(r.text, "前面 **Selected** 后面");
 	assert.equal(r.text.slice(r.start, r.end), "Selected");
 });
 
-test("applyMdAction inserts placeholder text on empty selection", () => {
+void test("applyMdAction inserts placeholder text on empty selection", () => {
 	const r = applyMdAction("ab", 1, 1, "italic");
 	assert.equal(r.text, "a*斜体文字*b");
 	assert.equal(r.text.slice(r.start, r.end), "斜体文字");
 });
 
-test("applyMdAction toggles an already-wrapped selection off", () => {
+void test("applyMdAction toggles an already-wrapped selection off", () => {
 	const r = applyMdAction("x **强调** y", 2, 8, "bold");
 	assert.equal(r.text, "x 强调 y");
 	assert.equal(r.text.slice(r.start, r.end), "强调");
 });
 
-test("applyMdAction prefixes each selected line and toggles off", () => {
+void test("applyMdAction prefixes each selected line and toggles off", () => {
 	const r = applyMdAction("第一行\n第二行", 0, 6, "list");
 	assert.equal(r.text, "- 第一行\n- 第二行");
 	const off = applyMdAction(r.text, 0, r.text.length, "list");
 	assert.equal(off.text, "第一行\n第二行");
 });
 
-test("applyMdAction extends the prefix to the whole last line", () => {
+void test("applyMdAction extends the prefix to the whole last line", () => {
 	const r = applyMdAction("甲\n乙丙", 0, 2, "quote");
 	assert.equal(r.text, "> 甲\n> 乙丙");
 });
 
-test("applyMdAction link keeps the label and selects the URL", () => {
+void test("applyMdAction link keeps the label and selects the URL", () => {
 	const r = applyMdAction("看 这个", 2, 4, "link");
 	assert.equal(r.text, "看 [这个](链接地址)");
 	assert.equal(r.text.slice(r.start, r.end), "链接地址");

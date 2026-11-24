@@ -7,32 +7,32 @@ import { statsCore } from "../src/lib/stats-core";
 const SC = statsCore();
 
 // streak：跨月连续（1/31 → 2/1 相邻）
-test("streak today", () => {
+void test("streak today", () => {
 	assert.deepEqual(SC.streak(["2026-02-01", "2026-01-31", "2026-01-30"], "2026-02-01"), 3);
 });
-test("streak today-missing starts yesterday", () => {
+void test("streak today-missing starts yesterday", () => {
 	assert.deepEqual(SC.streak(["2026-02-01", "2026-01-31"], "2026-02-02"), 2);
 });
-test("streak broken by gap", () => {
+void test("streak broken by gap", () => {
 	assert.deepEqual(SC.streak(["2026-02-01", "2026-01-29"], "2026-02-01"), 1);
 });
-test("streak empty", () => {
+void test("streak empty", () => {
 	assert.deepEqual(SC.streak([], "2026-02-01"), 0);
 });
 
 // bestStreak：乱序 + 重复去重 + 跨月
-test("bestStreak", () => {
+void test("bestStreak", () => {
 	assert.deepEqual(
 		SC.bestStreak(["2026-01-31", "2026-02-01", "2026-02-02", "2026-02-02", "2026-03-01"]),
 		3,
 	);
 });
-test("bestStreak empty", () => {
+void test("bestStreak empty", () => {
 	assert.deepEqual(SC.bestStreak([]), 0);
 });
 
 // countBy：空键跳过
-test("countBy", () => {
+void test("countBy", () => {
 	assert.deepEqual(
 		SC.countBy([{ c: "待办" }, { c: "待办" }, { c: "" }, {}], (p) => p.c),
 		{ 待办: 2 },
@@ -40,7 +40,7 @@ test("countBy", () => {
 });
 
 // tagFreq：摊平计数
-test("tagFreq", () => {
+void test("tagFreq", () => {
 	assert.deepEqual(SC.tagFreq([{ tags: ["a", "b"] }, { tags: ["a"] }, { tags: undefined }]), {
 		a: 2,
 		b: 1,
@@ -50,7 +50,7 @@ test("tagFreq", () => {
 // —— 2026-11 自 stats-view 收编进 core 的口径 ——
 
 // dayCounts：按 'YYYY-MM-DD' 键聚合计数
-test("dayCounts", () => {
+void test("dayCounts", () => {
 	const pages = [{ ctime: 0 }, { ctime: 0 }, { ctime: 86_400_000 }];
 	const counts = SC.dayCounts(pages, (p) => p.ctime, (ms) => new Date(ms).toISOString().slice(0, 10));
 	assert.deepEqual(counts, { "1970-01-01": 2, "1970-01-02": 1 });
@@ -58,12 +58,12 @@ test("dayCounts", () => {
 });
 
 // heatmapLevel：边界 → lv0–lv4（≤1→1，≤3→2，≤5→3）
-test("heatmapLevel boundaries", () => {
+void test("heatmapLevel boundaries", () => {
 	assert.deepEqual([0, 1, 2, 3, 5, 6, 99].map(SC.heatmapLevel), [0, 1, 2, 2, 3, 4, 4]);
 });
 
 // weekStart：周三回退到同一时刻的周一（本地时区）
-test("weekStart rolls back to Monday, keeps time of day", () => {
+void test("weekStart rolls back to Monday, keeps time of day", () => {
 	// 2026-11-18 是周三；14:30 本地时刻
 	const wed = new Date(2026, 10, 18, 14, 30, 0, 0).getTime();
 	const mon = new Date(2026, 10, 16, 14, 30, 0, 0).getTime();
@@ -75,11 +75,11 @@ test("weekStart rolls back to Monday, keeps time of day", () => {
 });
 
 // insightText：空窗提示 / 大类占比 + 连续天数文案
-test("insightText empty recent window", () => {
+void test("insightText empty recent window", () => {
 	const pages = [{ ctime: 0, category: "待办" }];
 	assert.match(SC.insightText(pages, 3, Date.now()), /近 7 天还没有随手记/);
 });
-test("insightText top category with share and streak", () => {
+void test("insightText top category with share and streak", () => {
 	const now = Date.now();
 	const pages = [
 		{ ctime: now - 1000, category: "待办" },

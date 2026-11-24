@@ -44,7 +44,7 @@ function collect(node: SceneNode, pred: (n: SceneNode) => boolean): SceneNode[] 
 
 const LEAF = { x0: 0.56, dur: 96, ph0: 0.38, sway: 48, rot: 58 };
 
-test("leafPose: y 随虚拟时间单调前进，一个周期后回到起点", () => {
+void test("leafPose: y 随虚拟时间单调前进，一个周期后回到起点", () => {
 	const vh = 900;
 	// 从本叶初相之后的"整周期窗口"起步（ph0=0.38 → 相位在 (1-0.38)*dur 处回卷）
 	const startMs = (1 - LEAF.ph0) * LEAF.dur * 1000;
@@ -60,7 +60,7 @@ test("leafPose: y 随虚拟时间单调前进，一个周期后回到起点", ()
 	assert.equal(Math.round(wrapped.y), Math.round(start.y));
 });
 
-test("leafPose: 纯绝对时间函数——调用历史不影响结果（重渲染续相位）", () => {
+void test("leafPose: 纯绝对时间函数——调用历史不影响结果（重渲染续相位）", () => {
 	const t = 12345678;
 	// 直接查询 vs 模拟逐帧推进后再查询：结果必须相同（rAF 停转/重渲染不重启相位）
 	const direct = leafPose(t, LEAF, 1600, 900);
@@ -68,14 +68,14 @@ test("leafPose: 纯绝对时间函数——调用历史不影响结果（重渲�
 	assert.deepEqual(leafPose(t, LEAF, 1600, 900), direct); // 历史之后查询仍一致
 });
 
-test("leafPose: 同一时刻三车道对角错落（x0 顺序即 x 顺序）", () => {
+void test("leafPose: 同一时刻三车道对角错落（x0 顺序即 x 顺序）", () => {
 	for (const t of [0, 30_000, 77_777, 200_000]) {
 		const xs = FALL_LEAVES.map((c) => leafPose(t, c, 1600, 900).x);
 		assert.ok(xs[0] < xs[1] && xs[1] < xs[2], `t=${t} 应保持对角次序: ${xs}`);
 	}
 });
 
-test("swayAngle: 端点取 ±amp，且为纯时间函数（重插续相位不齐跳）", () => {
+void test("swayAngle: 端点取 ±amp，且为纯时间函数（重插续相位不齐跳）", () => {
 	const dur = 10, amp = 0.5, ph0 = 0;
 	assert.ok(Math.abs(swayAngle(0, dur, amp, ph0) + amp) < 1e-6); // c=0 → 三角波起点 -amp
 	assert.ok(Math.abs(swayAngle(dur * 1000, dur, amp, ph0) - amp) < 1e-6); // c=1 → +amp
@@ -93,7 +93,7 @@ test("swayAngle: 端点取 ±amp，且为纯时间函数（重插续相位不齐
 
 /* ============ 竹园构图（三层景深） ============ */
 
-test("buildGarden: 四层景深结构 + sway 摆动参数齐备", () => {
+void test("buildGarden: 四层景深结构 + sway 摆动参数齐备", () => {
 	const rng = makeRng(42);
 	const svg = buildGarden(rng, fakeNode, { mobile: false });
 	for (const cls of ["layer-far", "layer-distant", "layer-mid", "layer-near"]) {
@@ -109,7 +109,7 @@ test("buildGarden: 四层景深结构 + sway 摆动参数齐备", () => {
 	}
 });
 
-test("buildGarden: 同种子同构图（确定性），desktop 远景 5 丛 / mobile 3 丛", () => {
+void test("buildGarden: 同种子同构图（确定性），desktop 远景 5 丛 / mobile 3 丛", () => {
 	const countFar = (mobile: boolean): string => {
 		const svg = buildGarden(makeRng(42), fakeNode, { mobile });
 		const far = collect(svg, (n) => n.attrs["class"] === "layer-far")[0];
@@ -131,7 +131,7 @@ test("buildGarden: 同种子同构图（确定性），desktop 远景 5 丛 / mo
 
 /* ============ 双缓冲：竹园复用（移动而非重建） ============ */
 
-test("getOrCreateGarden: 只建一次，重渲染返回同一实例且不重画", () => {
+void test("getOrCreateGarden: 只建一次，重渲染返回同一实例且不重画", () => {
 	const cache: { svg?: SceneNode } = {};
 	let builds = 0;
 	const build = (): SceneNode => {
@@ -156,7 +156,7 @@ test("getOrCreateGarden: 只建一次，重渲染返回同一实例且不重画"
 
 /* ============ 赏竹显隐状态机 ============ */
 
-test("zenToggle: 空白点击切换，显隐状态迁移完整", () => {
+void test("zenToggle: 空白点击切换，显隐状态迁移完整", () => {
 	let zen = false;
 	zen = zenToggle(zen, true);
 	assert.equal(zen, true);
@@ -167,7 +167,7 @@ test("zenToggle: 空白点击切换，显隐状态迁移完整", () => {
 	assert.equal(zen, false);
 });
 
-test("FALL_LEAVES: 三车道对角 + 颜色随构图配对（三叶三色）", () => {
+void test("FALL_LEAVES: 三车道对角 + 颜色随构图配对（三叶三色）", () => {
 	assert.equal(FALL_LEAVES.length, 3);
 	for (let t = 0; t <= 100_000; t += 10_000) {
 		const xs = FALL_LEAVES.map((c) => leafPose(t, c, 1600, 900).x);

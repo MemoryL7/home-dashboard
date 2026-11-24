@@ -163,4 +163,13 @@ export function renderRecentCard(
 			cls: "recent-meta",
 		});
 	}
+	// 超过 5 条时列表区限高，其余靠滚动/拖拽查看（与 todo 卡同款折算，4px 补行高取整误差）
+	const MAX_VISIBLE = 5;
+	if (recent.length > MAX_VISIBLE) {
+		const first = body.firstElementChild as HTMLElement | null;
+		const h = first?.offsetHeight ?? 0;
+		if (h > 0) body.setCssProps({ maxHeight: `${h * MAX_VISIBLE + 4}px` });
+	} else {
+		body.setCssProps({ maxHeight: "" });
+	}
 }
