@@ -206,13 +206,16 @@ export function renderTodoCard(parent: HTMLElement, deps: TodoDeps): TodoCard {
 		}
 		headHint.setText(`本周已完成 ${doneCount} 条`);
 		// 超过 5 条时列表区限高，其余靠滚动查看（行高等一致，按首行高度折算）。
-		// offsetHeight 会取整，行高带小数时 5 行累计少算几像素，把末行按钮裁掉；
-		// 加 4px 余量补回（仍远小于一行高度，不会露出第 6 行）。
+		// 测量放到下一帧：渲染当时卡片可能还没完成布局，offsetHeight 会拿到 0，
+		// 限高就设不上（表现为全部行直接铺开）。offsetHeight 会取整，行高带小数
+		// 时 5 行累计少算几像素，加 4px 余量补回（远小于一行高度，不会露出第 6 行）。
 		const MAX_VISIBLE = 5;
 		if (pending.length > MAX_VISIBLE) {
-			const first = ul.firstElementChild as HTMLElement | null;
-			const h = first?.offsetHeight ?? 0;
-			if (h > 0) todoBody.setCssProps({ maxHeight: `${h * MAX_VISIBLE + 4}px` });
+			requestAnimationFrame(() => {
+				const first = ul.firstElementChild as HTMLElement | null;
+				const h = first?.offsetHeight ?? 0;
+				if (h > 0) todoBody.setCssProps({ maxHeight: `${h * MAX_VISIBLE + 4}px` });
+			});
 		} else {
 			todoBody.setCssProps({ maxHeight: "" });
 		}
