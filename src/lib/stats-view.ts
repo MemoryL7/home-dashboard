@@ -9,6 +9,7 @@ import { statsCore } from "./stats-core";
 import { collectInbox, type InboxPage } from "./inbox-query";
 import { putIcon, ICON_TITLE } from "./icon";
 import { enableDragScroll } from "./drag-scroll";
+import { relatedTargets } from "./todo-core";
 import type { Moment } from "moment";
 
 /** moment 的最小切片（Node 测试只传日期格式化桩）。 */
@@ -133,6 +134,8 @@ export function renderRecentCard(
 	moment: MomentLike,
 	opts: { showDetail?: (page: InboxPage, opts?: { focusInput?: boolean }) => void } = {},
 ): void {
+	// 跟进记录（related 指向待办）不属于随手记，不进最近新增 feed
+	pages = pages.filter((p) => relatedTargets(p.related).length === 0);
 	parent.empty();
 	const card = parent.createDiv({ cls: "dash-card card-bamboo recent-card" });
 	const head = card.createDiv({ cls: "recent-head" });
