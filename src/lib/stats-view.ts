@@ -163,17 +163,5 @@ export function renderRecentCard(
 			cls: "recent-meta",
 		});
 	}
-	// 超过 5 条时列表区限高，其余靠滚动/拖拽查看（与 todo 卡同款折算，4px 补行高取整误差）。
-	// 测量放到下一帧：渲染当时卡片可能还没完成布局，offsetHeight 会拿到 0
-	const MAX_VISIBLE = 5;
-	if (recent.length > MAX_VISIBLE) {
-		requestAnimationFrame(() => {
-			const first = body.firstElementChild as HTMLElement | null;
-			const h = first?.offsetHeight ?? 0;
-			// 直接赋 style.maxHeight：setCssProps 走 setProperty，驼峰键会被静默丢弃
-			if (h > 0) body.style.maxHeight = `${h * MAX_VISIBLE + 4}px`;
-		});
-	} else {
-		body.style.maxHeight = "";
-	}
+	// 不限条数：卡片随并排的待办卡（限高 5 行）等高，列表区超出父级框内部滚动
 }
