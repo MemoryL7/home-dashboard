@@ -50,6 +50,7 @@ export interface TodoPageLike {
 	name: string;
 	ctime: number;
 	summary: string;
+	category: string;
 	status: string;
 	related: unknown;
 	/** 完成时刻（ms，fm.completed 解析而来）；旧数据无此字段为 0。 */
@@ -125,7 +126,7 @@ export function renderTodoCard(parent: HTMLElement, deps: TodoDeps): TodoCard {
 		if (!v) return;
 		const path = await createNote(
 			{
-				category: "待办",
+				category: "",
 				subcategory: "",
 				subsubcategory: "",
 				summary: v.replace(/\s+/g, " ").slice(0, 30),

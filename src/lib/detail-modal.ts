@@ -19,6 +19,7 @@ export interface DetailPageLike {
 	name: string;
 	ctime: number;
 	summary: string;
+	category: string;
 	status: string;
 	related: unknown;
 }
@@ -211,7 +212,8 @@ function renderTodoSection(
 				deps.inboxDir,
 				deps.moment(Date.now()).format("YYYY-MM-DD-HHmmss"),
 				{
-					category: "待办",
+					// 跟进不重新归类，领域继承自所属待办（ADR 0007：待办不作类目值）
+					category: page.category || "",
 					subcategory: "",
 					subsubcategory: "",
 					summary: v.replace(/\s+/g, " ").slice(0, 30),
