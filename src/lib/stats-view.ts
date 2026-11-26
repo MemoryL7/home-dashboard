@@ -170,9 +170,10 @@ export function renderRecentCard(
 		requestAnimationFrame(() => {
 			const first = body.firstElementChild as HTMLElement | null;
 			const h = first?.offsetHeight ?? 0;
-			if (h > 0) body.setCssProps({ maxHeight: `${h * MAX_VISIBLE + 4}px` });
+			// 直接赋 style.maxHeight：setCssProps 走 setProperty，驼峰键会被静默丢弃
+			if (h > 0) body.style.maxHeight = `${h * MAX_VISIBLE + 4}px`;
 		});
 	} else {
-		body.setCssProps({ maxHeight: "" });
+		body.style.maxHeight = "";
 	}
 }
