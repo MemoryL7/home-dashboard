@@ -9,9 +9,9 @@
    （collectInbox），由宿主 refresh() 驱动重绘。
    ============================================================ */
 import { localStamp } from "./classify-core";
-import { putIcon, ICON_TITLE } from "./icon";
+import { putIcon, ICON_TITLE, ICON_BTN } from "./icon";
 import { enableDragScroll } from "./drag-scroll";
-import { pendingTodos, doneInWeek, followupCounts } from "./todo-core";
+import { activeTodos, doneInWeek, followupCounts } from "./todo-core";
 import { createInboxNote } from "./note-create";
 import type { DetailPageLike } from "./detail-modal";
 
@@ -69,6 +69,8 @@ export interface TodoDeps {
 	refresh: () => void;
 	/** 点击待办行/跟进按钮 → 详情弹窗（focusInput 让弹窗直接聚焦记跟进输入框）。 */
 	showDetail: (page: TodoPageLike, opts?: { focusInput?: boolean }) => void;
+	/** 放大按钮 → 打开放大视图（宿主接 todo-expanded，覆盖 Home 全部块区域）。 */
+	openExpanded: () => void;
 }
 
 export interface TodoCard {
@@ -95,6 +97,10 @@ export function renderTodoCard(parent: HTMLElement, deps: TodoDeps): TodoCard {
 	putIcon(h3, "square-check", ICON_TITLE);
 	h3.createSpan({ text: "待办" });
 	const headHint = head.createSpan({ cls: "todo-head-hint" });
+	// 放大入口（IKY82E）：Lucide maximize-2，覆盖 Home 全部块区域的放大视图
+	const expandBtn = head.createEl("button", { cls: "card-act todo-expand" });
+	putIcon(expandBtn, "maximize-2", ICON_BTN);
+	expandBtn.addEventListener("click", () => deps.openExpanded());
 
 	// 卡内跟进行已移除：「跟进」按钮改呼详情弹窗记跟进（弹窗聚焦输入框），
 	// 记/删跟进统一在弹窗内完成
@@ -177,7 +183,8 @@ export function renderTodoCard(parent: HTMLElement, deps: TodoDeps): TodoCard {
 
 	function render(pages: TodoPageLike[]): void {
 		todoBody.empty();
-		const pending = pendingTodos(pages);
+		// 活跃待办（pending + doing）：进行中的事与未开始的一起速览（口径在 todo-core）
+		const pending = activeTodos(pages);
 		// 本周已完成：优先用完成时刻；旧数据无 completed 字段回退 ctime（口径在 todo-core）
 		const doneCount = doneInWeek(pages, Date.now());
 		const fuCounts = followupCounts(pages);

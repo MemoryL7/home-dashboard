@@ -131,18 +131,23 @@ export function openDetailModal(
 		await deps.renderMarkdown(body, stripFrontmatter(raw), page.path);
 	})();
 
-	/* —— 待办区：跟进列表 + 记跟进 + 完成（仅 pending 待办显示） —— */
-	if (page.status === "pending") {
-		renderTodoSection(deps, modal, page, close, opts);
-	}
+	/* —— 跟进/关联区：任意记录可链（related 泛化）；待办额外有状态操作 —— */
+	renderTodoSection(deps, modal, page, close, opts);
 }
 
 /** 属性行：从 metadataCache 取 frontmatter，挑用户关心的字段排成 chips。
- *  状态 pending→进行中 / done→已完成；空字段跳过。 */
+ *  状态/分面用中文；空字段跳过。 */
 function renderProps(deps: DetailDeps, modal: HTMLElement, page: DetailPageLike): void {
 	const fm = deps.app.metadataCache.getCache(page.path)?.frontmatter;
 	if (!fm) return;
-	const STATUS_ZH: Record<string, string> = { pending: "进行中", done: "已完成" };
+	const STATUS_ZH: Record<string, string> = {
+		pending: "未开始",
+		doing: "进行中",
+		done: "已完成",
+		dropped: "已放弃",
+	};
+	const ENERGY_ZH: Record<string, string> = { deep: "深度", shallow: "琐事" };
+	const URGENCY_ZH: Record<string, string> = { now: "马上", soon: "近期", someday: "以后" };
 	const chips: string[] = [];
 	const cat = [fm.category, fm.subcategory, fm.subsubcategory]
 		.filter((x) => typeof x === "string" && x.trim())
@@ -150,6 +155,10 @@ function renderProps(deps: DetailDeps, modal: HTMLElement, page: DetailPageLike)
 	if (cat) chips.push(cat);
 	if (typeof fm.status === "string" && fm.status)
 		chips.push(STATUS_ZH[fm.status] ?? fm.status);
+	if (typeof fm.energy === "string" && fm.energy)
+		chips.push(ENERGY_ZH[fm.energy] ?? fm.energy);
+	if (typeof fm.urgency === "string" && fm.urgency)
+		chips.push(URGENCY_ZH[fm.urgency] ?? fm.urgency);
 	if (Array.isArray(fm.tags) && fm.tags.length) chips.push(fm.tags.map(String).join(" "));
 	chips.push(`创建 ${deps.moment(page.ctime).format("YYYY-MM-DD HH:mm")}`);
 	if (typeof fm.completed === "string" && fm.completed) chips.push(`完成 ${fm.completed}`);
@@ -167,9 +176,10 @@ function renderTodoSection(
 	const sec = modal.createDiv({ cls: "detail-todo" });
 	const listEl = sec.createDiv({ cls: "detail-fu-list" });
 	const newRow = sec.createDiv({ cls: "todo-new" });
+	const isTodo = page.status === "pending" || page.status === "doing";
 	const inp = newRow.createEl("input", {
 		cls: "todo-input",
-		attr: { type: "text", placeholder: "记一条跟进，回车保存…" },
+		attr: { type: "text", placeholder: isTodo ? "记一条跟进，回车保存…" : "链接到一条记录（related），回车保存…" },
 	});
 	const foot = sec.createDiv({ cls: "detail-foot" });
 
@@ -235,15 +245,17 @@ function renderTodoSection(
 		})();
 	});
 
-	foot
-		.createEl(
-			"button",
-			{ cls: "card-act act-strong", attr: { "data-tip": "标记该待办为已完成" } },
-			(btn) => {
-				putIcon(btn, "check-circle", ICON_BTN);
-				btn.createSpan({ text: " 标记完成" });
-			},
-		)
+	// 标记完成：仅待办（pending/doing）显示；口径走 todo-core 状态机（合法流转才落盘）
+	if (isTodo) {
+		foot
+			.createEl(
+				"button",
+				{ cls: "card-act act-strong", attr: { "data-tip": "标记该待办为已完成" } },
+				(btn) => {
+					putIcon(btn, "check-circle", ICON_BTN);
+					btn.createSpan({ text: " 标记完成" });
+				},
+			)
 		.addEventListener("click", () => {
 			void (async () => {
 				const f = deps.app.vault.getAbstractFileByPath(page.path);
@@ -257,6 +269,7 @@ function renderTodoSection(
 				deps.refresh();
 			})();
 		});
+	}
 
 	renderList(deps.getPages());
 	// 从卡片「跟进」按钮呼出时直接聚焦输入框，落笔即记

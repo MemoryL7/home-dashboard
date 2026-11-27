@@ -9,6 +9,11 @@ import {
 	followupCounts,
 	followupsFor,
 	stripFrontmatter,
+	transitStatus,
+	activeTodos,
+	todoBoard,
+	nextEnergy,
+	nextUrgency,
 } from "../src/lib/todo-core";
 
 const page = (over: Partial<Parameters<typeof pendingTodos>[0][number]> = {}) => ({
@@ -17,6 +22,8 @@ const page = (over: Partial<Parameters<typeof pendingTodos>[0][number]> = {}) =>
 	status: "",
 	related: undefined,
 	completed: 0,
+	energy: "",
+	urgency: "",
 	...over,
 });
 
@@ -88,4 +95,97 @@ void test("followupsFor filters by target, sorts oldest first", () => {
 void test("stripFrontmatter removes leading yaml block", () => {
 	assert.equal(stripFrontmatter("---\nstatus: pending\n---\n正文\n"), "正文\n");
 	assert.equal(stripFrontmatter("直接正文"), "直接正文");
+});
+
+// transitStatus：状态机合法流转生效，非法流转返回 null（ADR 0008）
+void test("transitStatus legal transitions", () => {
+	assert.equal(transitStatus("pending", "doing"), "doing");
+	assert.equal(transitStatus("pending", "done"), "done");
+	assert.equal(transitStatus("pending", "dropped"), "dropped");
+	assert.equal(transitStatus("doing", "pending"), "pending");
+	assert.equal(transitStatus("doing", "done"), "done");
+	assert.equal(transitStatus("doing", "dropped"), "dropped");
+	assert.equal(transitStatus("dropped", "pending"), "pending");
+});
+void test("transitStatus illegal transitions return null", () => {
+	assert.equal(transitStatus("done", "pending"), null);
+	assert.equal(transitStatus("done", "doing"), null);
+	assert.equal(transitStatus("dropped", "done"), null);
+	assert.equal(transitStatus("dropped", "doing"), null);
+	assert.equal(transitStatus("", "doing"), null);
+	assert.equal(transitStatus("pending", "unknown"), null);
+});
+
+// activeTodos：pending+doing 都算活跃，ctime 倒序
+void test("activeTodos includes doing, sorts newest first", () => {
+	const out = activeTodos([
+		page({ name: "d", ctime: 1, status: "doing" }),
+		page({ name: "n", ctime: 3, status: "pending" }),
+		page({ name: "done", ctime: 4, status: "done" }),
+		page({ name: "o", ctime: 2, status: "pending" }),
+	]);
+	assert.deepEqual(out.map((p) => p.name), ["n", "o", "d"]);
+});
+
+// todoBoard：分组/排序/统计条口径
+void test("todoBoard groups pending by urgency, sorts by ctime desc", () => {
+	const b = todoBoard(
+		[
+			page({ name: "s1", status: "pending", urgency: "soon", ctime: 1 }),
+			page({ name: "s2", status: "pending", urgency: "soon", ctime: 2 }),
+			page({ name: "n1", status: "pending", urgency: "now", ctime: 3 }),
+			page({ name: "y1", status: "pending", urgency: "someday", ctime: 4 }),
+			page({ name: "un", status: "pending", urgency: "", ctime: 5 }),
+		],
+		NOW,
+	);
+	assert.deepEqual(b.now.map((p) => p.name), ["n1"]);
+	assert.deepEqual(b.soon.map((p) => p.name), ["s2", "s1"]);
+	assert.deepEqual(b.someday.map((p) => p.name), ["y1"]);
+	assert.deepEqual(b.doing, []);
+});
+void test("todoBoard doing section and done sorted by completed desc", () => {
+	const b = todoBoard(
+		[
+			page({ name: "d2", status: "doing", ctime: 2 }),
+			page({ name: "d1", status: "doing", ctime: 1 }),
+			page({ name: "ok-old", status: "done", completed: NOW - 3 * DAY, ctime: 1 }),
+			page({ name: "ok-new", status: "done", completed: NOW - DAY, ctime: 2 }),
+		],
+		NOW,
+	);
+	assert.deepEqual(b.doing.map((p) => p.name), ["d2", "d1"]);
+	assert.deepEqual(b.done.map((p) => p.name), ["ok-new", "ok-old"]);
+});
+void test("todoBoard stats counts and deep percentage", () => {
+	const b = todoBoard(
+		[
+			page({ name: "a", status: "doing", energy: "deep", ctime: 1 }),
+			page({ name: "b", status: "pending", energy: "deep", urgency: "now", ctime: 2 }),
+			page({ name: "c", status: "pending", energy: "shallow", urgency: "soon", ctime: 3 }),
+			page({ name: "ok", status: "done", completed: NOW - DAY, ctime: 4 }),
+			page({ name: "dr", status: "dropped", ctime: NOW - DAY }),
+		],
+		NOW,
+	);
+	assert.deepEqual(b.stats, { doing: 1, pending: 2, doneWeek: 1, droppedWeek: 1, deepPct: 67 });
+});
+void test("todoBoard stats zero on empty and no active", () => {
+	assert.deepEqual(todoBoard([], NOW).stats, {
+		doing: 0,
+		pending: 0,
+		doneWeek: 0,
+		droppedWeek: 0,
+		deepPct: 0,
+	});
+	assert.deepEqual(todoBoard([page({ status: "done" })], NOW).stats.deepPct, 0);
+});
+
+// 分面循环切换：deep→shallow→deep；now→soon→someday→now
+void test("facet cycle helpers", () => {
+	assert.equal(nextEnergy("deep"), "shallow");
+	assert.equal(nextEnergy("shallow"), "deep");
+	assert.equal(nextUrgency("now"), "soon");
+	assert.equal(nextUrgency("soon"), "someday");
+	assert.equal(nextUrgency("someday"), "now");
 });

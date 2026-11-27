@@ -54,6 +54,10 @@ export interface InboxPage {
 	summary: string;
 	category: string;
 	status: string;
+	/** 待办精力分面：deep / shallow；非待办或未分为空串。 */
+	energy: string;
+	/** 待办紧迫度分面：now / soon / someday；非待办或未分为空串。 */
+	urgency: string;
 	tags: string[];
 	related: unknown;
 	/** 完成时刻（ms）。fm.completed（localStamp 格式）解析而来；无/解析失败为 0。 */
@@ -94,6 +98,8 @@ export function collectInbox(files: VaultFileSnapshot[], inboxDir: string): Inbo
 			summary: str(fm.summary),
 			category: str(fm.category),
 			status: str(fm.status),
+			energy: str(fm.energy),
+			urgency: str(fm.urgency),
 			tags: Array.isArray(fm.tags) ? fm.tags.filter((t): t is string => typeof t === "string") : [],
 			related: fm.related,
 			completed: completedTs(fm.completed),

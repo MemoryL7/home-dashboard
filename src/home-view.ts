@@ -12,10 +12,11 @@ import { ImageSuggestModal } from "./lib/logo-ui";
 import { collectInbox, snapshotVault, type InboxPage } from "./lib/inbox-query";
 import { renderSidePanel, renderRecentCard } from "./lib/stats-view";
 import { statsCore } from "./lib/stats-core";
-import { pendingTodos } from "./lib/todo-core";
+import { activeTodos } from "./lib/todo-core";
 import { openDetailModal, closeDetailModal, type DetailPageLike } from "./lib/detail-modal";
 import { renderDraftCard, type DraftCard } from "./lib/draft-view";
 import { renderTodoCard, type TodoCard } from "./lib/todo-view";
+import { openExpandedTodos } from "./lib/todo-expanded";
 import { classify } from "./lib/classify-core";
 import { DEFAULT_CLASSIFY_PROMPT } from "./lib/prompts";
 import { putIcon, ICON_TITLE, ICON_BTN } from "./lib/icon";
@@ -116,6 +117,17 @@ export class HomeView extends ItemView {
 		this.todoCard = renderTodoCard(todoRoot, {
 			app: this.app,
 			inboxDir: conventions.inboxDir,
+			openExpanded: () =>
+				openExpandedTodos({
+					app: this.app,
+					root: root,
+					getPages: () => this.collectPages(),
+					inboxDir: conventions.inboxDir,
+					moment: (t) => moment(t),
+					notice: (msg) => new Notice(msg, 3000),
+					refresh: () => this.refreshStats(),
+					showDetail: (p) => this.showDetail(p),
+				}),
 			classify: (file, opts) =>
 				classify(this.app, requestUrl, file, {
 					ai: {
@@ -220,7 +232,7 @@ export class HomeView extends ItemView {
 			const wk = "周" + "日一二三四五六"[moment().day()];
 			const counts = statsCore().dayCounts(pages, (p) => p.ctime, (ms) => moment(ms).format("YYYY-MM-DD"));
 			const todayCount = counts[todayStr] || 0;
-			const pending = pendingTodos(pages).length;
+			const pending = activeTodos(pages).length;
 			this.capsuleEl.setText(`${todayStr} ${wk} · 已记 ${todayCount} 条 · 待办 ${pending}`);
 		}
 	}

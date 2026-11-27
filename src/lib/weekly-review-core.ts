@@ -51,7 +51,7 @@ export function buildWeekReview(
 	if (inWindow.length === 0) return null;
 
 	const activeDays = new Set(inWindow.map((n) => n.date.slice(0, 5))).size;
-	const pending = inWindow.filter((n) => n.status === "pending").length;
+	const pending = inWindow.filter((n) => n.status === "pending" || n.status === "doing").length;
 	const digest = inWindow
 		.map((n) => {
 			let body = n.body;

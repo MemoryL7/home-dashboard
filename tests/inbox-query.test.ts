@@ -60,6 +60,8 @@ void test("coerces frontmatter fields and defaults missing ones", () => {
 		summary: "s",
 		category: "待办",
 		status: "pending",
+		energy: "",
+		urgency: "",
 		tags: ["t1", "t2"],
 		related: "x",
 		completed: 0,
@@ -68,8 +70,19 @@ void test("coerces frontmatter fields and defaults missing ones", () => {
 	assert.deepEqual(bare.summary, "");
 	assert.deepEqual(bare.category, "");
 	assert.deepEqual(bare.status, "");
+	assert.deepEqual(bare.energy, "");
+	assert.deepEqual(bare.urgency, "");
 	assert.deepEqual(bare.tags, []);
 	assert.deepEqual(bare.related, undefined);
+});
+
+void test("parses energy and urgency facets", () => {
+	const pages = collectInbox(
+		[file("Inbox/f.md", 1, { status: "pending", energy: "deep", urgency: "now" })],
+		"Inbox",
+	);
+	assert.deepEqual(pages[0].energy, "deep");
+	assert.deepEqual(pages[0].urgency, "now");
 });
 
 void test("order follows input order (no hidden sorting)", () => {

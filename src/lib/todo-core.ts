@@ -16,6 +16,32 @@ export interface TodoItem {
 	related: unknown;
 	/** 完成时刻（ms）；旧数据无此字段为 0。 */
 	completed: number;
+	/** 精力分面：deep / shallow；非待办或未分为空串。 */
+	energy?: string;
+	/** 紧迫度分面：now / soon / someday；非待办或未分为空串。 */
+	urgency?: string;
+}
+
+/** 分面合法值与循环切换次序（点击徽标 deep→shallow→deep、now→soon→someday→now）。 */
+export const ENERGY_CYCLE = ["deep", "shallow"] as const;
+export const URGENCY_CYCLE = ["now", "soon", "someday"] as const;
+export const nextEnergy = (v: string): string =>
+	ENERGY_CYCLE[(ENERGY_CYCLE.indexOf(v as never) + 1) % ENERGY_CYCLE.length];
+export const nextUrgency = (v: string): string =>
+	URGENCY_CYCLE[(URGENCY_CYCLE.indexOf(v as never) + 1) % URGENCY_CYCLE.length];
+
+/**
+ * 状态机：status 生命周期（ADR 0008）pending → doing → done，旁路 dropped。
+ * action 即目标状态（开始=doing / 暂停=pending / 完成=done / 放弃=dropped / 复原=pending）。
+ * 非法流转（如 done→pending）返回 null，调用方不写盘。
+ */
+const TRANSITIONS: Record<string, Record<string, string>> = {
+	pending: { doing: "doing", done: "done", dropped: "dropped" },
+	doing: { pending: "pending", done: "done", dropped: "dropped" },
+	dropped: { pending: "pending" },
+};
+export function transitStatus(status: string, action: string): string | null {
+	return TRANSITIONS[status]?.[action] ?? null;
 }
 
 /**
@@ -47,6 +73,73 @@ export function pendingTodos<T extends TodoItem>(pages: T[]): T[] {
 	return pages
 		.filter((p) => p.status === "pending")
 		.sort((a, b) => b.ctime - a.ctime);
+}
+
+/** 活跃待办：pending + doing（「待办未完」与紧凑待办卡的口径），ctime 倒序。 */
+export function activeTodos<T extends TodoItem>(pages: T[]): T[] {
+	return pages
+		.filter((p) => p.status === "pending" || p.status === "doing")
+		.sort((a, b) => b.ctime - a.ctime);
+}
+
+/** 某状态且落在 nowMs 起 7 天窗内的条数（完成/放弃节奏共用）。 */
+function statusInWeek<T extends TodoItem>(pages: T[], status: string, nowMs: number): number {
+	const weekAgo = nowMs - 7 * 24 * 3600 * 1000;
+	return pages.filter(
+		(p) => p.status === status && (p.completed || p.ctime) >= weekAgo,
+	).length;
+}
+
+/**
+ * 放大视图的全部数据准备（ADR 0008）：分组 / 排序 / 统计条口径一次算好，
+ * 视图只渲染。pending 按 urgency 三栏（非法值/空值归 someday 之前不入栏，见 urOf）。
+ */
+export interface TodoBoard<T extends TodoItem> {
+	doing: T[];
+	now: T[];
+	soon: T[];
+	someday: T[];
+	done: T[];
+	dropped: T[];
+	stats: {
+		doing: number;
+		pending: number;
+		doneWeek: number;
+		droppedWeek: number;
+		/** 深度占比：活跃待办中 energy=deep 的百分比（无活跃待办为 0）。 */
+		deepPct: number;
+	};
+}
+
+const byCtimeDesc = <T extends TodoItem>(a: T, b: T): number => b.ctime - a.ctime;
+
+export function todoBoard<T extends TodoItem>(pages: T[], nowMs: number): TodoBoard<T> {
+	const active = pages.filter((p) => p.status === "pending" || p.status === "doing");
+	const doing = active.filter((p) => p.status === "doing").sort(byCtimeDesc);
+	const pend = pages.filter((p) => p.status === "pending");
+	const ur = (want: string): T[] =>
+		pend.filter((p) => p.urgency === want).sort(byCtimeDesc);
+	const done = pages
+		.filter((p) => p.status === "done")
+		.sort((a, b) => (b.completed || b.ctime) - (a.completed || a.ctime));
+	const dropped = pages.filter((p) => p.status === "dropped").sort(byCtimeDesc);
+	return {
+		doing,
+		now: ur("now"),
+		soon: ur("soon"),
+		someday: ur("someday"),
+		done,
+		dropped,
+		stats: {
+			doing: doing.length,
+			pending: active.length - doing.length,
+			doneWeek: statusInWeek(pages, "done", nowMs),
+			droppedWeek: statusInWeek(pages, "dropped", nowMs),
+			deepPct: active.length
+				? Math.round((active.filter((p) => p.energy === "deep").length * 100) / active.length)
+				: 0,
+		},
+	};
 }
 
 /** 本周已完成条数：status done 且（完成时刻，回退 ctime）落在 nowMs 起 7 天内。 */

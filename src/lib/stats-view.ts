@@ -33,7 +33,7 @@ export function renderSidePanel(
 	const today = moment();
 	const todayStr = today.format("YYYY-MM-DD");
 	const streak = SC.streak(Object.keys(counts), todayStr);
-	const pending = pages.filter((p) => p.status === "pending").length;
+	const pending = pages.filter((p) => p.status === "pending" || p.status === "doing").length;
 
 	/* —— 今日速览：2×2 数字格 —— */
 	const quickWrap = parent.createDiv({ cls: "sp-quick-wrap" });
