@@ -81,22 +81,24 @@ export function renderSidePanel(
 	});
 	ins.createDiv({ cls: "sp-bubble", text: SC.insightText(pages, streak, Date.now()) });
 
-	/* —— 大类分布：紧凑条形 —— */
+	/* —— 大类分布：紧凑条形（领域口径：待办按中类归行，跟进不计数） —— */
+	const catPages = pages.filter((p) => relatedTargets(p.related).length === 0);
 	const cats = parent.createDiv({ cls: "sp-cats" });
 	cats.createDiv({ cls: "sp-label" }, (lab) => {
 		putIcon(lab, "folder-open", ICON_TITLE);
-		lab.createSpan({ text: "大类分布" });
+		lab.createSpan({ text: `大类分布 · 累计 ${catPages.length} 条` });
 	});
-	const catRows = Object.entries(SC.countBy(pages, (p) => p.category)).sort(
+	const catRows = Object.entries(SC.countBy(catPages, SC.domainKey)).sort(
 		(a, b) => b[1] - a[1],
 	);
 	if (!catRows.length) {
-		cats.createDiv({ cls: "mini-muted", text: "AI 归类后这里会显示各大类条数" });
+		cats.createDiv({ cls: "mini-muted", text: "AI 归类后这里会显示各领域条数" });
 	} else {
 		const total = catRows.reduce((s, r) => s + r[1], 0);
 		const body = cats.createDiv({ cls: "sp-cats-body" });
 		for (const [cat, n] of catRows) {
-			const line = body.createDiv({ cls: "bar-line" });
+			const unclassified = cat === "未分类" || cat === "未分";
+			const line = body.createDiv({ cls: "bar-line" + (unclassified ? " is-unclassified" : "") });
 			line.createEl("span", { text: cat, cls: "bar-label" });
 			const bar = line.createDiv({ cls: "bar-track" });
 			bar.createDiv({ cls: "bar-fill" }).style.width = Math.round((n * 100) / total) + "%";

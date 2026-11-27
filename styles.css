@@ -458,6 +458,8 @@ body .home-dashboard.home-v2 .bg-garden {
 	background: var(--color-green, #5cb87a);
 }
 .theme-light .home-dashboard.home-v2 .bar-line .bar-fill { background: #2e7d54; }
+/* 未分/未分类：灰色行，弱化为兜底观感 */
+.home-dashboard.home-v2 .bar-line.is-unclassified .bar-fill { background: var(--text-faint); }
 .home-dashboard.home-v2 .bar-line .bar-num {
 	flex: none;
 	width: 24px;

@@ -53,6 +53,8 @@ export interface InboxPage {
 	ctime: number;
 	summary: string;
 	category: string;
+	/** 中类：大类下的自然子划分；待办条目以它作领域归行（ADR 0007）。 */
+	subcategory: string;
 	status: string;
 	/** 待办精力分面：deep / shallow；非待办或未分为空串。 */
 	energy: string;
@@ -97,6 +99,7 @@ export function collectInbox(files: VaultFileSnapshot[], inboxDir: string): Inbo
 			ctime: f.ctime,
 			summary: str(fm.summary),
 			category: str(fm.category),
+			subcategory: str(fm.subcategory),
 			status: str(fm.status),
 			energy: str(fm.energy),
 			urgency: str(fm.urgency),

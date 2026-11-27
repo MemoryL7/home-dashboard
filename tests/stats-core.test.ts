@@ -74,7 +74,15 @@ void test("weekStart rolls back to Monday, keeps time of day", () => {
 	assert.deepEqual(SC.weekStart(sun), new Date(2026, 10, 16, 8, 0, 0, 0).getTime());
 });
 
-// insightText：空窗提示 / 大类占比 + 连续天数文案
+// domainKey：待办按中类归行（空则「未分」），其余按大类（空则「未分类」）
+void test("domainKey todo maps to subcategory", () => {
+	assert.deepEqual(SC.domainKey({ category: "待办", subcategory: "工作" }), "工作");
+	assert.deepEqual(SC.domainKey({ category: "待办", subcategory: "" }), "未分");
+	assert.deepEqual(SC.domainKey({ category: "生活" }), "生活");
+	assert.deepEqual(SC.domainKey({ category: "" }), "未分类");
+});
+
+// insightText：空窗提示 / 领域占比 + 连续天数文案（领域口径：待办按中类）
 void test("insightText empty recent window", () => {
 	const pages = [{ ctime: 0, category: "待办" }];
 	assert.match(SC.insightText(pages, 3, Date.now()), /近 7 天还没有随手记/);
@@ -82,12 +90,12 @@ void test("insightText empty recent window", () => {
 void test("insightText top category with share and streak", () => {
 	const now = Date.now();
 	const pages = [
-		{ ctime: now - 1000, category: "待办" },
-		{ ctime: now - 2000, category: "待办" },
+		{ ctime: now - 1000, category: "待办", subcategory: "工作" },
+		{ ctime: now - 2000, category: "待办", subcategory: "工作" },
 		{ ctime: now - 3000, category: "生活" },
 	];
 	assert.deepEqual(
 		SC.insightText(pages, 5, now),
-		"近 7 天共记 3 条，「待办」占比 67%；已连续记录 5 天，保持节奏 🎋",
+		"近 7 天共记 3 条，「工作」占比 67%；已连续记录 5 天，保持节奏 🎋",
 	);
 });

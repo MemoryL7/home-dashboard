@@ -59,6 +59,7 @@ void test("coerces frontmatter fields and defaults missing ones", () => {
 		ctime: 123,
 		summary: "s",
 		category: "待办",
+		subcategory: "",
 		status: "pending",
 		energy: "",
 		urgency: "",
@@ -69,6 +70,7 @@ void test("coerces frontmatter fields and defaults missing ones", () => {
 	const bare = collectInbox([file("Inbox/b.md", 5)], "Inbox")[0];
 	assert.deepEqual(bare.summary, "");
 	assert.deepEqual(bare.category, "");
+	assert.deepEqual(bare.subcategory, "");
 	assert.deepEqual(bare.status, "");
 	assert.deepEqual(bare.energy, "");
 	assert.deepEqual(bare.urgency, "");
